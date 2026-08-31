@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva orden de trabajo — PC Service Manager{% endblock %}
+{% block page_title %}Nueva orden de trabajo{% endblock %}
+{% block nav_ordenes %}active{% endblock %}
+
+{% block content %}
+<div style="max-width:800px;">
+
+  <!-- Breadcrumb -->
+  <nav style="margin-bottom:1rem;font-size:.875rem;color:var(--color-text-secondary);">
+    <a href="{% url 'workorder-list' %}" class="link">Órdenes</a>
+    {% if customer %}
+      &rsaquo; <a href="{% url 'customer-detail' customer.pk %}" class="link">{{ customer.full_name }}</a>
+    {% endif %}
+    &rsaquo; Nueva orden
+  </nav>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Nueva orden de trabajo</h2>
+    </div>
+    <div class="card-body">
+
+      {% if not customer %}
+      <!-- Paso 1: buscar cliente si no viene pre-seleccionado -->
+      <div style="margin-bottom:1.5rem;padding:1rem;background:var(--color-bg);border-radius:var(--radius);border:1px solid var(--color-border);">
+        <p style="font-weight:600;margin-bottom:.5rem;">1. Seleccionar cliente</p>
+        <form method="get" class="d-flex gap-2">
+          <input type="text" name="q" class="form-control" placeholder="Buscar por nombre, teléfono, email..." style="flex:1;">
+          <button type="submit" class="btn btn-secondary btn-sm" formaction="{% url 'customer-list' %}">Ir a clientes</button>
+        </form>
+        <p class="text-muted" style="font-size:.8125rem;margin-top:.5rem;margin-bottom:0;">O buscá el cliente y usá el botón "Nueva orden" desde su ficha.</p>
+      </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.customer }}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-error" style="margin-bottom:1rem;">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        {% if customer %}
+        <!-- Cliente y equipo pre-seleccionados -->
+        <div style="background:var(--color-primary-light);border-radius:var(--radius);padding:.75rem 1rem;margin-bottom:1.25rem;border:1px solid var(--color-border);">
+          <strong>Cliente:</strong>
+          <a href="{% url 'customer-detail' customer.pk %}" class="link">{{ customer.full_name }}</a>
+          — {{ customer.phone }}
+        </div>
+        {% endif %}
+
+        <!-- Equipo -->
+        <div class="form-group">
+          <label class="form-label" for="{{ form.device.id_for_label }}">
+            Equipo <span style="color:var(--color-danger)">*</span>
+          </label>
+          {% if device %}
+            <div style="background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius);padding:.5rem .75rem;margin-bottom:.25rem;">
+              {{ device }} — S/N: {{ device.serial_number|default:"sin número" }}
+            </div>
+            <input type="hidden" name="device" value="{{ device.pk }}">
+          {% else %}
+            {{ form.device }}
+          {% endif %}
+          {% if form.device.errors %}<p class="form-error">{{ form.device.errors|join:", " }}</p>{% endif %}
+          {% if customer and not device %}
+            <small class="text-muted">Solo se muestran equipos activos del cliente seleccionado.
+              <a href="{% url 'device-create' customer.pk %}" class="link">Registrar nuevo equipo</a>
+            </small>
+          {% endif %}
+        </div>
+
+        <!-- Problema informado -->
+        <div class="form-group">
+          <label class="form-label" for="{{ form.reported_issue.id_for_label }}">
+            Problema informado <span style="color:var(--color-danger)">*</span>
+          </label>
+          {{ form.reported_issue }}
+          {% if form.reported_issue.errors %}<p class="form-error">{{ form.reported_issue.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <!-- Prioridad, origen y técnico -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.priority.id_for_label }}">{{ form.priority.label }}</label>
+            {{ form.priority }}
+            {% if form.priority.errors %}<p class="form-error">{{ form.priority.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.source.id_for_label }}">{{ form.source.label }}</label>
+            {{ form.source }}
+            {% if form.source.errors %}<p class="form-error">{{ form.source.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.assigned_to.id_for_label }}">{{ form.assigned_to.label }}</label>
+            {{ form.assigned_to }}
+            {% if form.assigned_to.errors %}<p class="form-error">{{ form.assigned_to.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+
+        <!-- Condición y accesorios -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.intake_condition.id_for_label }}">{{ form.intake_condition.label }}</label>
+            {{ form.intake_condition }}
+            {% if form.intake_condition.errors %}<p class="form-error">{{ form.intake_condition.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.received_accessories.id_for_label }}">{{ form.received_accessories.label }}</label>
+            {{ form.received_accessories }}
+            {% if form.received_accessories.errors %}<p class="form-error">{{ form.received_accessories.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+
+        <!-- Notas internas -->
+        <div class="form-group">
+          <label class="form-label" for="{{ form.internal_notes.id_for_label }}">{{ form.internal_notes.label }}</label>
+          {{ form.internal_notes }}
+          {% if form.internal_notes.errors %}<p class="form-error">{{ form.internal_notes.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <!-- Fechas -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.diagnosis_due_at.id_for_label }}">{{ form.diagnosis_due_at.label }}</label>
+            {{ form.diagnosis_due_at }}
+            {% if form.diagnosis_due_at.errors %}<p class="form-error">{{ form.diagnosis_due_at.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.promised_delivery_at.id_for_label }}">{{ form.promised_delivery_at.label }}</label>
+            {{ form.promised_delivery_at }}
+            {% if form.promised_delivery_at.errors %}<p class="form-error">{{ form.promised_delivery_at.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="form-submit d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Crear orden</button>
+          {% if customer %}
+            <a href="{% url 'customer-detail' customer.pk %}" class="btn btn-secondary">Cancelar</a>
+          {% else %}
+            <a href="{% url 'workorder-list' %}" class="btn btn-secondary">Cancelar</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Reparación — {{ order.number }} — PC Service Manager{% endblock %}
+{% block page_title %}Reparación{% endblock %}
+{% block nav_ordenes %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.badge-pending  { background:#fef9c3; color:#854d0e; }
+.badge-passed   { background:#dcfce7; color:#166534; }
+.badge-failed   { background:#fee2e2; color:#991b1b; }
+.badge-na       { background:#f3f4f6; color:#6b7280; }
+.badge-test {
+  display:inline-flex;align-items:center;
+  padding:.2rem .55rem;border-radius:9999px;
+  font-size:.75rem;font-weight:600;
+}
+.log-entry {
+  border-left:3px solid var(--color-border);
+  padding:.5rem .75rem;
+  margin-bottom:.75rem;
+  border-radius:0 var(--radius) var(--radius) 0;
+}
+.test-card {
+  border:1px solid var(--color-border);
+  border-radius:var(--radius);
+  padding:.75rem;
+  margin-bottom:.75rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- Breadcrumb -->
+  <nav style="margin-bottom:1rem;font-size:.875rem;color:var(--color-text-secondary);">
+    <a href="{% url 'workorder-list' %}" class="link">Órdenes</a>
+    &rsaquo; <a href="{% url 'workorder-detail' order.pk %}" class="link">{{ order.number }}</a>
+    &rsaquo; Reparación
+  </nav>
+
+  <!-- Cabecera -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;">
+      <div>
+        <h1 style="font-size:1.25rem;font-weight:700;margin-bottom:.25rem;">
+          Reparación — {{ order.number }}
+        </h1>
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+          {% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}
+          <span style="font-size:.875rem;color:var(--color-text-secondary);">
+            Total: {{ total_minutes }} min
+            {% if total_minutes >= 60 %}
+            ({{ total_minutes|floatformat:0 }} min ≈ {% widthratio total_minutes 60 1 %} hs)
+            {% endif %}
+          </span>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Volver a la orden</a>
+        {% if not ready_errors %}
+        <form method="post" action="{% url 'mark-ready' order.pk %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary btn-sm"
+            onclick="return confirm('¿Marcar la orden como lista para retirar?');">
+            Marcar lista para retirar
+          </button>
+        </form>
+        {% else %}
+        <button type="button" class="btn btn-secondary btn-sm" disabled title="Existen pruebas pendientes o fallidas">
+          Marcar lista para retirar
+        </button>
+        {% endif %}
+      </div>
+    </div>
+    {% if ready_errors %}
+    <div style="padding:.75rem 1rem;border-top:1px solid var(--color-border);background:var(--color-danger-light);">
+      <p style="font-size:.8125rem;font-weight:600;color:var(--color-danger);margin-bottom:.375rem;">No se puede marcar como lista para retirar:</p>
+      <ul style="margin:0;padding-left:1.25rem;">
+        {% for error in ready_errors %}
+        <li style="font-size:.875rem;color:var(--color-danger);">{{ error }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+
+    <!-- ===== COLUMNA IZQUIERDA: WORK LOGS ===== -->
+    <div>
+      <!-- Lista de entradas -->
+      <div class="card" style="margin-bottom:1.25rem;">
+        <div class="card-header">
+          <h2 class="card-title">Entradas de trabajo</h2>
+        </div>
+        <div class="card-body">
+          {% if work_logs %}
+          {% for log in work_logs %}
+          <div class="log-entry" style="{% if log.entry_type == 'REPAIR' %}border-left-color:var(--color-primary);{% elif log.entry_type == 'TEST' %}border-left-color:var(--color-warning);{% elif log.entry_type == 'CUSTOMER_CONTACT' %}border-left-color:var(--color-info);{% endif %}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.25rem;flex-wrap:wrap;gap:.25rem;">
+              <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+                <span style="font-size:.75rem;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em;">
+                  {{ log.get_entry_type_display }}
+                </span>
+                {% if log.is_customer_visible %}
+                <span style="font-size:.7rem;padding:.1rem .4rem;border-radius:9999px;background:#dbeafe;color:#1e40af;font-weight:600;">
+                  Visible cliente
+                </span>
+                {% endif %}
+              </div>
+              <div style="font-size:.8125rem;color:var(--color-text-muted);white-space:nowrap;">
+                {{ log.created_at|date:"d/m/Y H:i" }}
+                {% if log.minutes_spent %}— {{ log.minutes_spent }} min{% endif %}
+              </div>
+            </div>
+            <p style="margin-bottom:.25rem;white-space:pre-line;font-size:.875rem;">{{ log.description }}</p>
+            <p style="margin-bottom:0;font-size:.8125rem;color:var(--color-text-muted);">
+              {% if log.author %}{{ log.author.get_full_name|default:log.author.username }}{% else %}Sistema{% endif %}
+            </p>
+          </div>
+          {% endfor %}
+          {% else %}
+          <p class="text-muted">No hay entradas de trabajo registradas aún.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Formulario nueva entrada -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Agregar entrada</h2>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{% url 'worklog-create' order.pk %}">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom:.75rem;">
+              <label class="form-label" for="{{ log_form.entry_type.id_for_label }}">{{ log_form.entry_type.label }}</label>
+              {{ log_form.entry_type }}
+            </div>
+            <div class="form-group" style="margin-bottom:.75rem;">
+              <label class="form-label" for="{{ log_form.description.id_for_label }}">{{ log_form.description.label }}</label>
+              {{ log_form.description }}
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:.75rem;align-items:end;margin-bottom:.75rem;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" for="{{ log_form.minutes_spent.id_for_label }}">{{ log_form.minutes_spent.label }}</label>
+                {{ log_form.minutes_spent }}
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;">
+                  {{ log_form.is_customer_visible }}
+                  <span style="font-size:.875rem;">{{ log_form.is_customer_visible.label }}</span>
+                </label>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Registrar entrada</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== COLUMNA DERECHA: PRUEBAS FINALES ===== -->
+    <div>
+      <!-- Lista de pruebas -->
+      <div class="card" style="margin-bottom:1.25rem;">
+        <div class="card-header">
+          <h2 class="card-title">Pruebas finales</h2>
+        </div>
+        <div class="card-body">
+          {% if final_tests %}
+          {% for test in final_tests %}
+          <div class="test-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.4rem;">
+              <span style="font-weight:600;font-size:.9375rem;">{{ test.name }}</span>
+              <span class="badge-test
+                {% if test.status == 'PASSED' %}badge-passed
+                {% elif test.status == 'FAILED' %}badge-failed
+                {% elif test.status == 'NOT_APPLICABLE' %}badge-na
+                {% else %}badge-pending{% endif %}">
+                {{ test.get_status_display }}
+              </span>
+            </div>
+            {% if test.notes %}
+            <p style="font-size:.875rem;color:var(--color-text-secondary);margin-bottom:.5rem;white-space:pre-line;">{{ test.notes }}</p>
+            {% endif %}
+            {% if test.tested_at %}
+            <p style="font-size:.8125rem;color:var(--color-text-muted);margin-bottom:.5rem;">
+              Probado {{ test.tested_at|date:"d/m/Y H:i" }}
+              {% if test.tested_by %}por {{ test.tested_by.get_full_name|default:test.tested_by.username }}{% endif %}
+            </p>
+            {% endif %}
+            <!-- Formulario para actualizar resultado -->
+            <form method="post" action="{% url 'finaltest-update' order.pk test.pk %}" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end;">
+              {% csrf_token %}
+              <div class="form-group" style="margin-bottom:0;flex:1;min-width:120px;">
+                <label class="form-label" style="font-size:.8125rem;">Resultado</label>
+                <select name="status" class="form-control" style="padding:.25rem .5rem;height:auto;font-size:.875rem;">
+                  {% for val, label in result_form.status.field.choices %}
+                  <option value="{{ val }}" {% if val == test.status %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;flex:2;min-width:150px;">
+                <label class="form-label" style="font-size:.8125rem;">Notas</label>
+                <textarea name="notes" rows="2" class="form-control" style="font-size:.875rem;">{{ test.notes }}</textarea>
+              </div>
+              <button type="submit" class="btn btn-secondary btn-sm" style="align-self:flex-end;">Actualizar</button>
+            </form>
+          </div>
+          {% endfor %}
+          {% else %}
+          <p class="text-muted">No hay pruebas finales registradas aún.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Formulario nueva prueba -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Agregar prueba final</h2>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{% url 'finaltest-create' order.pk %}">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom:.75rem;">
+              <label class="form-label" for="{{ test_form.name.id_for_label }}">{{ test_form.name.label }}</label>
+              {{ test_form.name }}
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Agregar prueba</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

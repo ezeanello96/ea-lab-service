@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{% if editing %}Editar usuario{% else %}Nuevo usuario{% endif %} — PC Service Manager{% endblock %}
+{% block page_title %}{% if editing %}Editar usuario: {{ target_user.username }}{% else %}Nuevo usuario{% endif %}{% endblock %}
+{% block nav_usuarios %}active{% endblock %}
+
+{% block content %}
+<div class="page-content" style="max-width:640px;">
+
+  <nav style="margin-bottom:1rem;font-size:.875rem;color:var(--color-text-secondary);">
+    <a href="{% url 'user-list' %}" class="link">Usuarios</a>
+    &rsaquo; {% if editing %}{{ target_user.username }}{% else %}Nuevo usuario{% endif %}
+  </nav>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">{% if editing %}Editar usuario{% else %}Crear nuevo usuario{% endif %}</h2>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        {% if not editing %}
+        <!-- Usuario solo se define al crear -->
+        <div class="form-group">
+          <label class="form-label" for="username">Nombre de usuario <span style="color:var(--color-danger);">*</span></label>
+          <input type="text" id="username" name="username" class="form-control"
+                 value="{{ form_data.username|default:'' }}" autocomplete="username" required>
+        </div>
+        {% endif %}
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="first_name">Nombre</label>
+            <input type="text" id="first_name" name="first_name" class="form-control"
+                   value="{{ target_user.first_name|default:form_data.first_name|default:'' }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="last_name">Apellido</label>
+            <input type="text" id="last_name" name="last_name" class="form-control"
+                   value="{{ target_user.last_name|default:form_data.last_name|default:'' }}">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input type="email" id="email" name="email" class="form-control"
+                 value="{{ target_user.email|default:form_data.email|default:'' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="phone">Teléfono</label>
+          <input type="tel" id="phone" name="phone" class="form-control"
+                 value="{{ target_user.profile.phone|default:form_data.phone|default:'' }}">
+        </div>
+
+        <hr style="margin:1.25rem 0;">
+
+        <div class="form-group">
+          <label class="form-label" for="password">
+            Contraseña {% if editing %}<span class="text-muted" style="font-weight:400;">(dejar en blanco para no cambiar)</span>{% else %}<span style="color:var(--color-danger);">*</span>{% endif %}
+          </label>
+          <input type="password" id="password" name="password" class="form-control"
+                 autocomplete="new-password" {% if not editing %}required{% endif %}>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password2">Repetir contraseña</label>
+          <input type="password" id="password2" name="password2" class="form-control" autocomplete="new-password">
+        </div>
+
+        <hr style="margin:1.25rem 0;">
+
+        <h3 style="font-size:1rem;margin-bottom:1rem;">Permisos</h3>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
+            <input type="checkbox" name="is_staff" value="1"
+                   {% if target_user.is_staff or form_data.is_staff == '1' %}checked{% endif %}>
+            <span>Administrador del sistema <span class="text-muted">(acceso total, incluye esta sección)</span></span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
+            <input type="checkbox" name="can_view_costs" value="1"
+                   {% if target_user.profile.can_view_costs or form_data.can_view_costs == '1' %}checked{% endif %}>
+            <span>Puede ver costos internos de presupuestos</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
+            <input type="checkbox" name="can_deliver_with_balance" value="1"
+                   {% if target_user.profile.can_deliver_with_balance or form_data.can_deliver_with_balance == '1' %}checked{% endif %}>
+            <span>Puede entregar equipos con saldo pendiente</span>
+          </label>
+        </div>
+
+        <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+          <button type="submit" class="btn btn-primary">
+            {% if editing %}Guardar cambios{% else %}Crear usuario{% endif %}
+          </button>
+          <a href="{% url 'user-list' %}" class="btn btn-ghost">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

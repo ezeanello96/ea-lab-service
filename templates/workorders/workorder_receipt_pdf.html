@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8">
+  <title>Recibo de Recepción {{ order.number }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 18mm 25mm 18mm;
+      @bottom-center {
+        content: "Página " counter(page) " de " counter(pages);
+        font-size: 9pt;
+        color: #6b7280;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10pt;
+      color: #111827;
+      line-height: 1.5;
+    }
+
+    /* ---- Encabezado ---- */
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18pt;
+      padding-bottom: 12pt;
+      border-bottom: 2pt solid #111827;
+    }
+
+    .business-name { font-size: 16pt; font-weight: bold; margin-bottom: 4pt; }
+    .business-meta { font-size: 9pt; color: #4b5563; line-height: 1.6; }
+
+    .doc-title-block { text-align: right; }
+    .doc-title { font-size: 18pt; font-weight: bold; color: #111827; margin-bottom: 4pt; }
+    .doc-subtitle { font-size: 10pt; color: #6b7280; }
+
+    /* ---- Aviso ---- */
+    .notice-box {
+      border: 1.5pt solid #111827;
+      border-radius: 4pt;
+      padding: 8pt 12pt;
+      margin-bottom: 16pt;
+      background: #f9fafb;
+      font-size: 9.5pt;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    /* ---- Grillas de información ---- */
+    .info-grid {
+      display: table;
+      width: 100%;
+      margin-bottom: 14pt;
+    }
+    .info-col {
+      display: table-cell;
+      width: 50%;
+      vertical-align: top;
+      padding-right: 14pt;
+    }
+    .info-col:last-child { padding-right: 0; padding-left: 14pt; }
+
+    .section-label {
+      font-size: 8pt;
+      font-weight: bold;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 5pt;
+      border-bottom: 1pt solid #e5e7eb;
+      padding-bottom: 3pt;
+    }
+
+    .info-row { display: table; width: 100%; margin-bottom: 3pt; }
+    .info-key { display: table-cell; width: 40%; font-weight: bold; font-size: 9.5pt; color: #374151; }
+    .info-val { display: table-cell; font-size: 9.5pt; color: #111827; }
+
+    /* ---- Secciones de detalle ---- */
+    .detail-section {
+      margin-bottom: 14pt;
+    }
+
+    .detail-box {
+      border: 1pt solid #e5e7eb;
+      border-radius: 4pt;
+      padding: 8pt 10pt;
+      background: #f9fafb;
+      font-size: 9.5pt;
+      min-height: 32pt;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .detail-box.tall {
+      min-height: 48pt;
+    }
+
+    /* ---- Firma ---- */
+    .signature-grid {
+      display: table;
+      width: 100%;
+      margin-top: 20pt;
+    }
+    .signature-col {
+      display: table-cell;
+      width: 48%;
+      vertical-align: bottom;
+    }
+    .signature-col:last-child {
+      padding-left: 4%;
+    }
+    .signature-line {
+      border-top: 1pt solid #374151;
+      padding-top: 5pt;
+      font-size: 9pt;
+      color: #374151;
+      text-align: center;
+    }
+
+    /* ---- Pie ---- */
+    .doc-footer {
+      border-top: 1pt solid #e5e7eb;
+      padding-top: 8pt;
+      margin-top: 18pt;
+      font-size: 8.5pt;
+      color: #6b7280;
+      text-align: center;
+    }
+
+    /* ---- Utilidades ---- */
+    .mb-8  { margin-bottom: 8pt; }
+    .mb-14 { margin-bottom: 14pt; }
+    .font-bold { font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== ENCABEZADO ===== -->
+  <div class="doc-header">
+    <div>
+      {% if business %}
+      <div class="business-name">{{ business.business_name }}</div>
+      <div class="business-meta">
+        {% if business.legal_name %}<div>{{ business.legal_name }}</div>{% endif %}
+        {% if business.address %}<div>{{ business.address }}</div>{% endif %}
+        {% if business.phone %}<div>Tel: {{ business.phone }}</div>{% endif %}
+        {% if business.email %}<div>{{ business.email }}</div>{% endif %}
+      </div>
+      {% else %}
+      <div class="business-name">Servicio Técnico</div>
+      {% endif %}
+    </div>
+    <div class="doc-title-block">
+      <div class="doc-title">RECIBO DE RECEPCIÓN</div>
+      <div class="doc-subtitle" style="font-size:12pt;font-weight:bold;">{{ order.number }}</div>
+      <div class="doc-subtitle" style="margin-top:4pt;">{{ order.received_at|date:"d/m/Y H:i" }}</div>
+      <div class="doc-subtitle" style="margin-top:3pt;color:#374151;font-weight:bold;">
+        Prioridad: {{ order.get_priority_display }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AVISO ===== -->
+  <div class="notice-box">
+    Este documento acredita que el equipo fue recibido en el servicio técnico en la fecha indicada.
+    Consérvenlo para retirar el equipo.
+  </div>
+
+  <!-- ===== DATOS CLIENTE Y EQUIPO ===== -->
+  <div class="info-grid mb-14">
+    <div class="info-col">
+      <div class="section-label">Datos del cliente</div>
+      <div class="info-row">
+        <span class="info-key">Nombre</span>
+        <span class="info-val">{{ order.customer.full_name }}</span>
+      </div>
+      {% if order.customer.phone %}
+      <div class="info-row">
+        <span class="info-key">Teléfono</span>
+        <span class="info-val">{{ order.customer.phone }}</span>
+      </div>
+      {% endif %}
+      {% if order.customer.email %}
+      <div class="info-row">
+        <span class="info-key">Email</span>
+        <span class="info-val">{{ order.customer.email }}</span>
+      </div>
+      {% endif %}
+      {% if order.customer.address %}
+      <div class="info-row">
+        <span class="info-key">Dirección</span>
+        <span class="info-val">{{ order.customer.address }}</span>
+      </div>
+      {% endif %}
+    </div>
+    <div class="info-col">
+      <div class="section-label">Datos del equipo</div>
+      <div class="info-row">
+        <span class="info-key">Tipo</span>
+        <span class="info-val">{{ order.device.get_device_type_display }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">Marca</span>
+        <span class="info-val">{{ order.device.brand }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">Modelo</span>
+        <span class="info-val">{{ order.device.model }}</span>
+      </div>
+      {% if order.device.serial_number %}
+      <div class="info-row">
+        <span class="info-key">N° de serie</span>
+        <span class="info-val">{{ order.device.serial_number }}</span>
+      </div>
+      {% endif %}
+      {% if order.device.operating_system %}
+      <div class="info-row">
+        <span class="info-key">S.O.</span>
+        <span class="info-val">{{ order.device.operating_system }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ===== PROBLEMA REPORTADO ===== -->
+  <div class="detail-section">
+    <div class="section-label mb-8">Problema reportado por el cliente</div>
+    <div class="detail-box tall">{{ order.reported_issue }}</div>
+  </div>
+
+  <!-- ===== CONDICIÓN DE INGRESO ===== -->
+  {% if order.intake_condition %}
+  <div class="detail-section">
+    <div class="section-label mb-8">Condición del equipo al ingreso</div>
+    <div class="detail-box">{{ order.intake_condition }}</div>
+  </div>
+  {% endif %}
+
+  <!-- ===== ACCESORIOS ===== -->
+  <div class="detail-section">
+    <div class="section-label mb-8">Accesorios y pertenencias recibidos</div>
+    <div class="detail-box">{% if order.received_accessories %}{{ order.received_accessories }}{% else %}Sin accesorios adicionales.{% endif %}</div>
+  </div>
+
+  <!-- ===== FECHAS ===== -->
+  <div class="info-grid mb-14">
+    <div class="info-col">
+      <div class="section-label">Fechas</div>
+      <div class="info-row">
+        <span class="info-key">Fecha de ingreso</span>
+        <span class="info-val">{{ order.received_at|date:"d/m/Y H:i" }}</span>
+      </div>
+      {% if order.diagnosis_due_at %}
+      <div class="info-row">
+        <span class="info-key">Diagnóstico estimado</span>
+        <span class="info-val">{{ order.diagnosis_due_at|date:"d/m/Y" }}</span>
+      </div>
+      {% endif %}
+      {% if order.promised_delivery_at %}
+      <div class="info-row">
+        <span class="info-key">Entrega estimada</span>
+        <span class="info-val" style="font-weight:bold;">{{ order.promised_delivery_at|date:"d/m/Y" }}</span>
+      </div>
+      {% endif %}
+    </div>
+    <div class="info-col">
+      <div class="section-label">Técnico asignado</div>
+      <div class="info-row">
+        <span class="info-key">Técnico</span>
+        <span class="info-val">{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"A definir" }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">Recibió</span>
+        <span class="info-val">{{ order.created_by.get_full_name|default:order.created_by.username|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== NOTAS PARA EL CLIENTE ===== -->
+  {% if order.customer_visible_notes %}
+  <div class="detail-section">
+    <div class="section-label mb-8">Observaciones</div>
+    <div class="detail-box">{{ order.customer_visible_notes }}</div>
+  </div>
+  {% endif %}
+
+  {% if business and business.receipt_terms %}
+  <!-- ===== CONDICIONES ===== -->
+  <div class="detail-section">
+    <div class="section-label mb-8">Condiciones del servicio</div>
+    <div class="detail-box" style="font-size:8.5pt;color:#4b5563;">{{ business.receipt_terms }}</div>
+  </div>
+  {% endif %}
+
+  <!-- ===== FIRMAS ===== -->
+  <div class="signature-grid">
+    <div class="signature-col">
+      <br><br><br>
+      <div class="signature-line">
+        Firma y aclaración del cliente<br>
+        <span style="font-size:8.5pt;">{{ order.customer.full_name }}</span>
+      </div>
+    </div>
+    <div class="signature-col">
+      <br><br><br>
+      <div class="signature-line">
+        Firma del técnico receptor<br>
+        <span style="font-size:8.5pt;">
+          {% if business %}{{ business.business_name }}{% else %}Servicio Técnico{% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PIE ===== -->
+  <div class="doc-footer">
+    <p>Generado el {% now "d/m/Y \a \l\a\s H:i" %}</p>
+    {% if business and business.phone %}<p>Consultas: {{ business.phone }}</p>{% endif %}
+  </div>
+
+</body>
+</html>

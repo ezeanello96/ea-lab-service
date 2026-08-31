@@ -1,0 +1,10 @@
+{% if messages %}
+<div class="messages-container" aria-live="polite" aria-atomic="false">
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }}" role="alert" data-auto-dismiss="5000">
+    <span class="alert-text">{{ message }}</span>
+    <button class="alert-close" aria-label="Cerrar" title="Cerrar">&times;</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}

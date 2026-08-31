@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Órdenes — PC Service Manager{% endblock %}
+{% block page_title %}Reporte de Órdenes{% endblock %}
+{% block nav_reportes %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.chart-container { position: relative; height: 260px; margin-bottom: 1.5rem; }
+.filter-form { display: flex; gap: .75rem; flex-wrap: wrap; align-items: flex-end; }
+.filter-form .form-group { margin-bottom: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- FILTROS -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header"><h2 class="card-title">Filtros</h2></div>
+    <div class="card-body">
+      <form method="get" class="filter-form">
+        <div class="form-group">
+          <label class="form-label">Desde</label>
+          <input type="date" name="date_from" class="form-control" value="{{ date_from|date:'Y-m-d' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hasta</label>
+          <input type="date" name="date_to" class="form-control" value="{{ date_to|date:'Y-m-d' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select name="status" class="form-control">
+            <option value="">Todos</option>
+            {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Técnico</label>
+          <select name="tech" class="form-control">
+            <option value="">Todos</option>
+            <option value="none" {% if tech_filter == 'none' %}selected{% endif %}>Sin asignar</option>
+            {% for tech in technicians %}
+            <option value="{{ tech.pk }}" {% if tech_filter == tech.pk|stringformat:'s' %}selected{% endif %}>
+              {{ tech.get_full_name|default:tech.username }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;gap:.5rem;">
+          <button type="submit" class="btn btn-primary">Filtrar</button>
+          <a href="{% url 'report-orders' %}" class="btn btn-ghost">Limpiar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- RESUMEN + GRÁFICOS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;">
+
+    <!-- Distribución por estado -->
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">Distribución por estado</h2></div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="chartStatus"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- OTs por mes -->
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">Órdenes por mes</h2></div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="chartMonthly"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA + EXPORTAR -->
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <h2 class="card-title">Listado — {{ total_orders }} orden{% if total_orders != 1 %}es{% endif %}</h2>
+      <a href="{% url 'report-orders-csv' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&status={{ status_filter }}&tech={{ tech_filter }}"
+         class="btn btn-secondary btn-sm">
+        Exportar CSV
+      </a>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Estado</th>
+            <th>Prioridad</th>
+            <th>Cliente</th>
+            <th>Equipo</th>
+            <th>Técnico</th>
+            <th>Ingreso</th>
+            <th>Entrega prometida</th>
+            <th>Entregado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr>
+            <td><a href="{% url 'workorder-detail' order.pk %}" style="font-family:monospace;font-weight:700;">{{ order.number }}</a></td>
+            <td>{% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}</td>
+            <td>{% include "workorders/_priority_badge.html" with priority=order.priority label=order.get_priority_display %}</td>
+            <td><a href="{% url 'customer-detail' order.customer.pk %}" class="link">{{ order.customer.full_name }}</a></td>
+            <td>{{ order.device }}</td>
+            <td>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"—" }}</td>
+            <td>{{ order.received_at|date:"d/m/Y" }}</td>
+            <td>{{ order.promised_delivery_at|date:"d/m/Y"|default:"—" }}</td>
+            <td>{{ order.delivered_at|date:"d/m/Y"|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" style="text-align:center;color:var(--color-text-muted);padding:2rem;">
+              No hay órdenes en el rango seleccionado.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if has_chart_data or has_month_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+const statusLabels = {{ status_labels_json }};
+const statusCounts = {{ status_counts_json }};
+const monthLabels  = {{ month_labels_json }};
+const monthCounts  = {{ month_counts_json }};
+
+const palette = [
+  '#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6',
+  '#ec4899','#14b8a6','#f97316','#6366f1','#84cc16',
+];
+
+if (statusLabels.length) {
+  new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: statusLabels,
+      datasets: [{ data: statusCounts, backgroundColor: palette.slice(0, statusLabels.length), borderWidth: 2 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+  });
+}
+
+if (monthLabels.length) {
+  new Chart(document.getElementById('chartMonthly'), {
+    type: 'bar',
+    data: {
+      labels: monthLabels,
+      datasets: [{ label: 'Órdenes', data: monthCounts, backgroundColor: '#3b82f6', borderRadius: 4 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+}
+</script>
+{% endif %}
+{% endblock %}

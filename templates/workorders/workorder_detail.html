@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}{{ order.number }} — PC Service Manager{% endblock %}
+{% block page_title %}Orden {{ order.number }}{% endblock %}
+{% block nav_ordenes %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Línea de tiempo */
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: .5rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-border);
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: -1.625rem;
+  top: .3rem;
+  width: .75rem;
+  height: .75rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+.timeline-item:first-child::before { background: var(--color-success); box-shadow: 0 0 0 2px var(--color-success); }
+.timeline-item:last-child::before  { background: var(--color-primary-dark); box-shadow: 0 0 0 2px var(--color-primary-dark); }
+.timeline-date  { font-size: .8125rem; color: var(--color-text-muted); margin-bottom: .125rem; }
+.timeline-actor { font-size: .875rem; font-weight: 600; }
+.timeline-comment { font-size: .875rem; color: var(--color-text-secondary); margin-top: .25rem; white-space: pre-line; }
+/* Transition buttons */
+.transition-btn-group { display: flex; flex-wrap: wrap; gap: .5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- Breadcrumb -->
+  <nav style="margin-bottom:1rem;font-size:.875rem;color:var(--color-text-secondary);">
+    <a href="{% url 'workorder-list' %}" class="link">Órdenes</a>
+    &rsaquo; {{ order.number }}
+  </nav>
+
+  <!-- ===== CABECERA ===== -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:start;">
+        <div>
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;flex-wrap:wrap;">
+            <h1 style="font-size:1.375rem;font-weight:700;font-family:monospace;margin-bottom:0;">{{ order.number }}</h1>
+            {% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}
+            {% include "workorders/_priority_badge.html" with priority=order.priority label=order.get_priority_display %}
+          </div>
+          <dl style="display:grid;grid-template-columns:max-content 1fr;gap:.25rem .875rem;font-size:.9rem;">
+            <dt class="text-muted">Cliente</dt>
+            <dd><a href="{% url 'customer-detail' order.customer.pk %}" class="link" style="font-weight:500;">{{ order.customer.full_name }}</a></dd>
+
+            <dt class="text-muted">Equipo</dt>
+            <dd><a href="{% url 'device-detail' order.device.pk %}" class="link">{{ order.device }}</a></dd>
+
+            <dt class="text-muted">Técnico</dt>
+            <dd>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"Sin asignar" }}</dd>
+
+            <dt class="text-muted">Ingreso</dt>
+            <dd>{{ order.received_at|date:"d/m/Y H:i" }}</dd>
+
+            {% if order.diagnosis_due_at %}
+            <dt class="text-muted">Límite diagnóstico</dt>
+            <dd>{{ order.diagnosis_due_at|date:"d/m/Y H:i" }}</dd>
+            {% endif %}
+
+            {% if order.promised_delivery_at %}
+            <dt class="text-muted">Entrega prometida</dt>
+            <dd>{{ order.promised_delivery_at|date:"d/m/Y H:i" }}</dd>
+            {% endif %}
+
+            {% if order.ready_at %}
+            <dt class="text-muted">Listo en</dt>
+            <dd>{{ order.ready_at|date:"d/m/Y H:i" }}</dd>
+            {% endif %}
+
+            {% if order.delivered_at %}
+            <dt class="text-muted">Entregado</dt>
+            <dd>{{ order.delivered_at|date:"d/m/Y H:i" }}</dd>
+            {% endif %}
+
+            <dt class="text-muted">Saldo pendiente</dt>
+            <dd style="font-weight:600;{% if balance > 0 %}color:var(--color-danger);{% else %}color:var(--color-success);{% endif %}">
+              ${{ balance|floatformat:2 }}
+            </dd>
+          </dl>
+        </div>
+
+        <!-- Acciones rápidas -->
+        <div>
+          <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.05em;">Acciones</p>
+          {% if allowed_transitions %}
+          <div class="transition-btn-group">
+            {% for status_val, status_label in allowed_transitions %}
+            <form method="post" action="{% url 'workorder-transition' order.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="to_status" value="{{ status_val }}">
+              <button type="submit" class="btn btn-sm
+                {% if status_val == 'CANCELLED' %}btn-danger
+                {% elif status_val == 'DELIVERED' %}btn-primary
+                {% elif status_val == 'READY_FOR_PICKUP' %}btn-primary
+                {% else %}btn-secondary{% endif %}"
+                onclick="return confirm('¿Cambiar estado a \'{{ status_label }}\'?');">
+                {{ status_label }}
+              </button>
+            </form>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted" style="font-size:.875rem;">No hay transiciones disponibles desde el estado actual.</p>
+          {% endif %}
+
+          <!-- Accesos rápidos a módulos -->
+          <div style="margin-top:.875rem;">
+            <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.05em;">Módulos</p>
+            <div class="transition-btn-group">
+              <a href="{% url 'diagnosis-view' order.pk %}" class="btn btn-sm btn-secondary">Diagnóstico</a>
+              <a href="{% url 'quote-list' order.pk %}" class="btn btn-sm btn-secondary">Presupuestos</a>
+              <a href="{% url 'repair-view' order.pk %}" class="btn btn-sm btn-secondary">Reparación</a>
+            </div>
+          </div>
+
+          <!-- PDF -->
+          <div style="margin-top:.875rem;">
+            <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.05em;">Documentos</p>
+            <div class="transition-btn-group">
+              <a href="{% url 'workorder-receipt' order.pk %}" class="btn btn-sm btn-secondary" target="_blank">Recibo de recepción (PDF)</a>
+            </div>
+          </div>
+
+          <!-- Google Calendar -->
+          <div style="margin-top:.875rem;">
+            <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.05em;">Google Calendar</p>
+            {% if order.google_calendar_event_id %}
+            <div class="transition-btn-group">
+              {% if order.google_calendar_event_link %}
+              <a href="{{ order.google_calendar_event_link }}"
+                 class="btn btn-sm btn-secondary" target="_blank" rel="noopener">Ver en Calendar</a>
+              {% endif %}
+              <form method="post" action="{% url 'workorder-calendar-update' order.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-secondary">Sincronizar evento</button>
+              </form>
+              <form method="post" action="{% url 'workorder-calendar-delete' order.pk %}"
+                    onsubmit="return confirm('¿Eliminar este evento de Google Calendar?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-danger">Eliminar evento</button>
+              </form>
+            </div>
+            {% else %}
+            <form method="post" action="{% url 'workorder-calendar-create' order.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-secondary">Crear evento en Calendar</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+
+    <!-- ===== DATOS DE LA ORDEN ===== -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Datos de la orden</h2>
+      </div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:1rem;">
+        <div>
+          <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.05em;">Problema informado</p>
+          <p style="white-space:pre-line;margin-bottom:0;">{{ order.reported_issue }}</p>
+        </div>
+        {% if order.intake_condition %}
+        <div>
+          <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.05em;">Condición de ingreso</p>
+          <p style="white-space:pre-line;margin-bottom:0;">{{ order.intake_condition }}</p>
+        </div>
+        {% endif %}
+        {% if order.received_accessories %}
+        <div>
+          <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.05em;">Accesorios recibidos</p>
+          <p style="white-space:pre-line;margin-bottom:0;">{{ order.received_accessories }}</p>
+        </div>
+        {% endif %}
+        {% if order.internal_notes %}
+        <div>
+          <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.05em;">Notas internas</p>
+          <p style="white-space:pre-line;margin-bottom:0;">{{ order.internal_notes }}</p>
+        </div>
+        {% endif %}
+        {% if order.cancel_reason %}
+        <div style="background:var(--color-danger-light);border-radius:var(--radius);padding:.75rem;">
+          <p style="font-size:.8125rem;font-weight:600;color:var(--color-danger);margin-bottom:.375rem;text-transform:uppercase;">Motivo de cancelación</p>
+          <p style="white-space:pre-line;margin-bottom:0;">{{ order.cancel_reason }}</p>
+        </div>
+        {% endif %}
+        <p style="font-size:.8125rem;color:var(--color-text-muted);margin-bottom:0;">
+          Origen: {{ order.get_source_display }}
+          {% if order.created_by %} — Creado por {{ order.created_by.get_full_name|default:order.created_by.username }}{% endif %}
+        </p>
+      </div>
+    </div>
+
+    <!-- ===== HISTORIAL DE ESTADOS ===== -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Historial de estados</h2>
+      </div>
+      <div class="card-body">
+        {% if status_history %}
+        <div class="timeline">
+          {% for entry in status_history %}
+          <div class="timeline-item">
+            <div class="timeline-date">{{ entry.created_at|date:"d/m/Y H:i" }}</div>
+            <div class="timeline-actor">
+              {% if entry.actor %}{{ entry.actor.get_full_name|default:entry.actor.username }}{% else %}Sistema{% endif %}
+              &rarr;
+              <span style="font-weight:700;">{{ entry.get_to_status_display }}</span>
+            </div>
+            {% if entry.from_status %}
+            <div style="font-size:.8125rem;color:var(--color-text-muted);">
+              Desde: {{ entry.get_from_status_display }}
+            </div>
+            {% endif %}
+            {% if entry.comment %}
+            <div class="timeline-comment">{{ entry.comment }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">Sin historial disponible.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== TRANSICIÓN CON COMENTARIO (formulario expandido) ===== -->
+  {% if allowed_transitions %}
+  <div class="card" style="margin-top:1.25rem;">
+    <div class="card-header">
+      <h2 class="card-title">Cambiar estado con comentario</h2>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'workorder-transition' order.pk %}">
+        {% csrf_token %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:end;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Nuevo estado</label>
+            <select name="to_status" class="form-control">
+              {% for status_val, status_label in allowed_transitions %}
+              <option value="{{ status_val }}">{{ status_label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Comentario (opcional)</label>
+            <textarea name="comment" class="form-control" rows="2" placeholder="Detalles del cambio de estado..."></textarea>
+          </div>
+        </div>
+        <div style="margin-top:1rem;">
+          <button type="submit" class="btn btn-primary">Aplicar transición</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

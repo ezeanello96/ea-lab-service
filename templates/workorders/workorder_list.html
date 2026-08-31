@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Órdenes de trabajo — PC Service Manager{% endblock %}
+{% block page_title %}Órdenes de trabajo{% endblock %}
+{% block nav_ordenes %}active{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- Encabezado -->
+  <div class="section-header" style="margin-bottom:1.25rem;">
+    <h1 style="font-size:1.5rem;font-weight:700;">Órdenes de trabajo</h1>
+    <div class="d-flex gap-2">
+      <a href="{% url 'workorder-kanban' %}" class="btn btn-secondary btn-sm">Vista Kanban</a>
+      <a href="{% url 'workorder-create' %}" class="btn btn-primary">+ Nueva orden</a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="card-body" style="padding:.75rem 1.25rem;">
+      <form method="get">
+        <div style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
+          <div style="flex:2;min-width:200px;">
+            <label class="form-label" style="margin-bottom:.25rem;">Buscar</label>
+            {{ search_form.q }}
+          </div>
+          <div style="flex:1;min-width:160px;">
+            <label class="form-label" style="margin-bottom:.25rem;">Estado</label>
+            {{ search_form.status }}
+          </div>
+          <div style="flex:1;min-width:140px;">
+            <label class="form-label" style="margin-bottom:.25rem;">Prioridad</label>
+            {{ search_form.priority }}
+          </div>
+          <div style="display:flex;gap:.5rem;align-items:flex-end;">
+            <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+            <a href="{% url 'workorder-list' %}" class="btn btn-secondary btn-sm">Limpiar</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card">
+    {% if orders %}
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Cliente</th>
+            <th>Equipo</th>
+            <th>Problema</th>
+            <th>Estado</th>
+            <th>Prioridad</th>
+            <th>Asignado</th>
+            <th>Ingreso</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr>
+            <td>
+              <a href="{% url 'workorder-detail' order.pk %}" style="font-weight:700;font-family:monospace;font-size:.9375rem;">{{ order.number }}</a>
+            </td>
+            <td>
+              <a href="{% url 'customer-detail' order.customer.pk %}" class="link">{{ order.customer.full_name }}</a>
+            </td>
+            <td>{{ order.device }}</td>
+            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ order.reported_issue }}">{{ order.reported_issue }}</td>
+            <td>
+              {% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}
+            </td>
+            <td>
+              {% include "workorders/_priority_badge.html" with priority=order.priority label=order.get_priority_display %}
+            </td>
+            <td>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"—" }}</td>
+            <td style="white-space:nowrap;">{{ order.received_at|date:"d/m/Y" }}</td>
+            <td style="text-align:right;">
+              <a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Ver</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if is_paginated %}
+    <div class="card-footer d-flex justify-between align-center">
+      <span class="text-muted text-sm">
+        Página {{ page_obj.number }} de {{ paginator.num_pages }} — {{ paginator.count }} orden{% if paginator.count != 1 %}es{% endif %}
+      </span>
+      <div class="d-flex gap-2">
+        {% if page_obj.has_previous %}
+          <a href="?{% if q %}q={{ q }}&{% endif %}{% if current_status %}status={{ current_status }}&{% endif %}{% if current_priority %}priority={{ current_priority }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-secondary btn-sm">‹ Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?{% if q %}q={{ q }}&{% endif %}{% if current_status %}status={{ current_status }}&{% endif %}{% if current_priority %}priority={{ current_priority }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-secondary btn-sm">Siguiente ›</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="card-body" style="text-align:center;padding:3rem;">
+      <p class="text-muted">No se encontraron órdenes con los filtros aplicados.</p>
+      <a href="{% url 'workorder-list' %}" class="btn btn-secondary btn-sm" style="margin-top:.5rem;">Ver todas</a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

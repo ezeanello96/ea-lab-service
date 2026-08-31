@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Presupuesto v{{ quote.version }} — {{ order.number }} — PC Service Manager{% endblock %}
+{% block page_title %}Presupuesto{% endblock %}
+{% block nav_ordenes %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.totals-row { display:flex; justify-content:space-between; padding:.375rem 0; font-size:.9375rem; }
+.totals-row.total-final { font-size:1.25rem; font-weight:700; border-top:2px solid var(--color-border); padding-top:.75rem; margin-top:.375rem; }
+.item-row input, .item-row select { font-size:.875rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- Breadcrumb -->
+  <nav style="margin-bottom:1rem;font-size:.875rem;color:var(--color-text-secondary);">
+    <a href="{% url 'workorder-list' %}" class="link">Órdenes</a>
+    &rsaquo; <a href="{% url 'workorder-detail' order.pk %}" class="link">{{ order.number }}</a>
+    &rsaquo; <a href="{% url 'quote-list' order.pk %}" class="link">Presupuestos</a>
+    &rsaquo; v{{ quote.version }}
+  </nav>
+
+  <!-- Cabecera del presupuesto -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-body" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;flex-wrap:wrap;">
+          <h1 style="font-size:1.25rem;font-weight:700;margin-bottom:0;">
+            {{ order.number }} — Presupuesto v{{ quote.version }}
+          </h1>
+          <span style="display:inline-flex;align-items:center;padding:.25rem .625rem;border-radius:9999px;font-size:.75rem;font-weight:600;
+            {% if quote.status == 'APPROVED' %}background:#dcfce7;color:#166534;
+            {% elif quote.status == 'REJECTED' %}background:#fee2e2;color:#991b1b;
+            {% elif quote.status == 'SENT' %}background:#dbeafe;color:#1e40af;
+            {% elif quote.status == 'DRAFT' %}background:#fef9c3;color:#854d0e;
+            {% elif quote.status == 'EXPIRED' %}background:#f3f4f6;color:#6b7280;
+            {% else %}background:#f3f4f6;color:#6b7280;{% endif %}">
+            {{ quote.get_status_display }}
+          </span>
+        </div>
+        <dl style="display:grid;grid-template-columns:max-content 1fr;gap:.2rem .75rem;font-size:.875rem;margin-bottom:0;">
+          <dt class="text-muted">Moneda</dt><dd>{{ quote.currency_code }}</dd>
+          {% if quote.valid_until %}
+          <dt class="text-muted">Válido hasta</dt><dd>{{ quote.valid_until|date:"d/m/Y" }}</dd>
+          {% endif %}
+          <dt class="text-muted">Creado</dt><dd>{{ quote.created_at|date:"d/m/Y H:i" }}</dd>
+          {% if quote.sent_at %}
+          <dt class="text-muted">Enviado</dt>
+          <dd>{{ quote.sent_at|date:"d/m/Y H:i" }} — {{ quote.get_sent_channel_display }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <a href="{% url 'quote-list' order.pk %}" class="btn btn-secondary btn-sm">Lista de versiones</a>
+        <a href="{% url 'quote-pdf' order.pk quote.pk %}" class="btn btn-secondary btn-sm" target="_blank">Descargar PDF</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:1.25rem;align-items:start;">
+
+    <!-- ===== ÍTEMS ===== -->
+    <div>
+      {% if quote.is_editable %}
+      <!-- Formulario editable con formset -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Ítems del presupuesto</h2>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <form method="post">
+            {% csrf_token %}
+            {{ formset.management_form }}
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;min-width:650px;">
+                <thead>
+                  <tr style="border-bottom:2px solid var(--color-border);background:var(--color-surface-raised);">
+                    <th style="padding:.5rem .75rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);width:60px;">Pos.</th>
+                    <th style="padding:.5rem .75rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);width:110px;">Tipo</th>
+                    <th style="padding:.5rem .75rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);">Descripción</th>
+                    <th style="padding:.5rem .75rem;text-align:right;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);width:80px;">Cant.</th>
+                    <th style="padding:.5rem .75rem;text-align:right;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);width:120px;">Precio unit.</th>
+                    {% if can_view_costs %}
+                    <th style="padding:.5rem .75rem;text-align:right;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);width:120px;">Costo interno</th>
+                    {% endif %}
+                    <th style="padding:.5rem .75rem;width:60px;"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item_form in formset %}
+                  <tr class="item-row" style="border-bottom:1px solid var(--color-border);">
+                    <td style="padding:.5rem .75rem;">
+                      {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+                      {{ item_form.position }}
+                    </td>
+                    <td style="padding:.5rem .75rem;">{{ item_form.item_type }}</td>
+                    <td style="padding:.5rem .75rem;">{{ item_form.description }}</td>
+                    <td style="padding:.5rem .75rem;">{{ item_form.quantity }}</td>
+                    <td style="padding:.5rem .75rem;">{{ item_form.unit_price }}</td>
+                    {% if can_view_costs %}
+                    <td style="padding:.5rem .75rem;">{{ item_form.internal_unit_cost }}</td>
+                    {% endif %}
+                    <td style="padding:.5rem .75rem;text-align:center;">
+                      <label title="Eliminar fila" style="cursor:pointer;color:var(--color-danger);">
+                        {{ item_form.DELETE }}
+                        ✕
+                      </label>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <div style="padding:.75rem 1rem;border-top:1px solid var(--color-border);">
+              <button type="submit" class="btn btn-primary btn-sm">Guardar ítems</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {% else %}
+      <!-- Vista de solo lectura -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Ítems del presupuesto</h2>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="border-bottom:2px solid var(--color-border);background:var(--color-surface-raised);">
+                  <th style="padding:.5rem 1rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);">Tipo</th>
+                  <th style="padding:.5rem 1rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);">Descripción</th>
+                  <th style="padding:.5rem 1rem;text-align:right;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);">Cant.</th>
+                  <th style="padding:.5rem 1rem;text-align:right;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);">Precio unit.</th>
+                  <th style="padding:.5rem 1rem;text-align:right;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);">Total</th>
+                  {% if can_view_costs %}
+                  <th style="padding:.5rem 1rem;text-align:right;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);">Costo interno</th>
+                  {% endif %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in quote.items.all %}
+                <tr style="border-bottom:1px solid var(--color-border);">
+                  <td style="padding:.625rem 1rem;font-size:.875rem;color:var(--color-text-secondary);">{{ item.get_item_type_display }}</td>
+                  <td style="padding:.625rem 1rem;">{{ item.description }}</td>
+                  <td style="padding:.625rem 1rem;text-align:right;">{{ item.quantity }}</td>
+                  <td style="padding:.625rem 1rem;text-align:right;">{{ quote.currency_code }} {{ item.unit_price|floatformat:2 }}</td>
+                  <td style="padding:.625rem 1rem;text-align:right;font-weight:600;">{{ quote.currency_code }} {{ item.line_total|floatformat:2 }}</td>
+                  {% if can_view_costs %}
+                  <td style="padding:.625rem 1rem;text-align:right;color:var(--color-text-muted);">
+                    {% if item.internal_unit_cost %}{{ quote.currency_code }} {{ item.internal_unit_cost|floatformat:2 }}{% else %}—{% endif %}
+                  </td>
+                  {% endif %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="padding:1.5rem;text-align:center;color:var(--color-text-muted);">Sin ítems registrados.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if quote.terms %}
+      <div class="card" style="margin-top:1.25rem;">
+        <div class="card-header"><h2 class="card-title">Condiciones</h2></div>
+        <div class="card-body"><p style="white-space:pre-line;margin-bottom:0;">{{ quote.terms }}</p></div>
+      </div>
+      {% endif %}
+
+      {% if quote.answered_at %}
+      <div class="card" style="margin-top:1.25rem;">
+        <div class="card-header"><h2 class="card-title">Información de respuesta</h2></div>
+        <div class="card-body">
+          <dl style="display:grid;grid-template-columns:max-content 1fr;gap:.25rem .75rem;font-size:.875rem;margin-bottom:0;">
+            <dt class="text-muted">Respondido por</dt><dd>{{ quote.answered_by_name }}</dd>
+            <dt class="text-muted">Canal</dt><dd>{{ quote.get_answer_channel_display }}</dd>
+            <dt class="text-muted">Fecha</dt><dd>{{ quote.answered_at|date:"d/m/Y H:i" }}</dd>
+            {% if quote.answer_comment %}
+            <dt class="text-muted">Comentario</dt><dd style="white-space:pre-line;">{{ quote.answer_comment }}</dd>
+            {% endif %}
+          </dl>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ===== PANEL LATERAL: TOTALES Y ACCIONES ===== -->
+    <div>
+      <!-- Totales -->
+      <div class="card" style="margin-bottom:1.25rem;">
+        <div class="card-header"><h2 class="card-title">Totales</h2></div>
+        <div class="card-body">
+          <div class="totals-row">
+            <span class="text-muted">Subtotal</span>
+            <span>{{ quote.currency_code }} {{ quote.subtotal|floatformat:2 }}</span>
+          </div>
+          {% if quote.discount_amount %}
+          <div class="totals-row" style="color:var(--color-success);">
+            <span>Descuento</span>
+            <span>– {{ quote.currency_code }} {{ quote.discount_amount|floatformat:2 }}</span>
+          </div>
+          {% endif %}
+          {% if quote.tax_rate %}
+          <div class="totals-row">
+            <span class="text-muted">IVA ({{ quote.tax_rate }}%)</span>
+            <span>{{ quote.currency_code }} {{ quote.tax_amount|floatformat:2 }}</span>
+          </div>
+          {% endif %}
+          <div class="totals-row total-final">
+            <span>TOTAL</span>
+            <span>{{ quote.currency_code }} {{ quote.total|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones según estado -->
+      {% if quote.status == 'DRAFT' %}
+      <div class="card" style="margin-bottom:1.25rem;">
+        <div class="card-header"><h2 class="card-title">Marcar como enviado</h2></div>
+        <div class="card-body">
+          <form method="post" action="{% url 'quote-send' order.pk quote.pk %}">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom:.75rem;">
+              <label class="form-label">{{ send_form.channel.label }}</label>
+              {{ send_form.channel }}
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="width:100%;">
+              Marcar como enviado
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if quote.status == 'SENT' %}
+      <div class="card" style="margin-bottom:1.25rem;">
+        <div class="card-header"><h2 class="card-title">Respuesta del cliente</h2></div>
+        <div class="card-body">
+          <p style="font-size:.875rem;color:var(--color-text-secondary);margin-bottom:.75rem;">Registrar la respuesta del cliente al presupuesto enviado.</p>
+
+          <!-- Aprobar -->
+          <details style="margin-bottom:.75rem;">
+            <summary style="cursor:pointer;font-weight:600;color:var(--color-success);padding:.375rem 0;">Aprobar presupuesto</summary>
+            <form method="post" action="{% url 'quote-approve' order.pk quote.pk %}" style="margin-top:.5rem;">
+              {% csrf_token %}
+              <div class="form-group" style="margin-bottom:.5rem;">
+                <label class="form-label">{{ answer_form.answered_by_name.label }}</label>
+                {{ answer_form.answered_by_name }}
+              </div>
+              <div class="form-group" style="margin-bottom:.5rem;">
+                <label class="form-label">{{ answer_form.answer_channel.label }}</label>
+                {{ answer_form.answer_channel }}
+              </div>
+              <div class="form-group" style="margin-bottom:.75rem;">
+                <label class="form-label">{{ answer_form.answer_comment.label }}</label>
+                {{ answer_form.answer_comment }}
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm" style="width:100%;"
+                onclick="return confirm('¿Aprobar el presupuesto? La orden avanzará a reparación.');">
+                Aprobar
+              </button>
+            </form>
+          </details>
+
+          <!-- Rechazar -->
+          <details>
+            <summary style="cursor:pointer;font-weight:600;color:var(--color-danger);padding:.375rem 0;">Rechazar presupuesto</summary>
+            <form method="post" action="{% url 'quote-reject' order.pk quote.pk %}" style="margin-top:.5rem;">
+              {% csrf_token %}
+              <div class="form-group" style="margin-bottom:.5rem;">
+                <label class="form-label">{{ answer_form.answered_by_name.label }}</label>
+                {{ answer_form.answered_by_name }}
+              </div>
+              <div class="form-group" style="margin-bottom:.5rem;">
+                <label class="form-label">{{ answer_form.answer_channel.label }}</label>
+                {{ answer_form.answer_channel }}
+              </div>
+              <div class="form-group" style="margin-bottom:.75rem;">
+                <label class="form-label">{{ answer_form.answer_comment.label }}</label>
+                {{ answer_form.answer_comment }}
+              </div>
+              <button type="submit" class="btn btn-danger btn-sm" style="width:100%;"
+                onclick="return confirm('¿Rechazar el presupuesto?');">
+                Rechazar
+              </button>
+            </form>
+          </details>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if quote.status == 'APPROVED' or quote.status == 'REJECTED' %}
+      <div class="card" style="margin-bottom:1.25rem;">
+        <div class="card-body" style="text-align:center;">
+          <p style="color:var(--color-text-muted);font-size:.875rem;margin-bottom:0;">
+            Este presupuesto está {% if quote.status == 'APPROVED' %}aprobado{% else %}rechazado{% endif %} y no puede modificarse.
+          </p>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

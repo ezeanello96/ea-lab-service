@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}{% if device %}Editar equipo{% else %}Nuevo equipo{% endif %} — PC Service Manager{% endblock %}
+{% block page_title %}{% if device %}Editar equipo{% else %}Nuevo equipo{% endif %}{% endblock %}
+{% block nav_clientes %}active{% endblock %}
+
+{% block content %}
+<div style="max-width:800px;">
+
+  <!-- Breadcrumb -->
+  <nav style="margin-bottom:1rem;font-size:.875rem;color:var(--color-text-secondary);">
+    <a href="{% url 'customer-list' %}" class="link">Clientes</a>
+    {% if customer %}
+      &rsaquo; <a href="{% url 'customer-detail' customer.pk %}" class="link">{{ customer.full_name }}</a>
+    {% endif %}
+    {% if device %}
+      &rsaquo; <a href="{% url 'device-detail' device.pk %}" class="link">{{ device }}</a>
+      &rsaquo; Editar
+    {% else %}
+      &rsaquo; Nuevo equipo
+    {% endif %}
+  </nav>
+
+  <!-- Aviso de duplicado -->
+  {% if duplicates %}
+  <div class="alert alert-warning" style="margin-bottom:1.25rem;">
+    <div class="alert-text">
+      <strong>Ya existe un equipo con el mismo número de serie para este cliente:</strong>
+      <ul style="list-style:disc;margin:.5rem 0 .75rem 1.25rem;">
+        {% for dup in duplicates %}
+        <li><a href="{% url 'device-detail' dup.pk %}" class="link" target="_blank">{{ dup }}</a> — S/N: {{ dup.serial_number }}</li>
+        {% endfor %}
+      </ul>
+      <p>Si querés registrarlo igualmente, marcá la casilla de confirmación.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">
+        {% if device %}Editar equipo{% else %}Registrar equipo{% endif %}
+        {% if customer %} — {{ customer.full_name }}{% endif %}
+      </h2>
+    </div>
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-error" style="margin-bottom:1rem;">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Información básica -->
+        <h3 style="font-size:.9375rem;margin-bottom:.75rem;color:var(--color-text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Información básica</h3>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.device_type.id_for_label }}">{{ form.device_type.label }}</label>
+            {{ form.device_type }}
+            {% if form.device_type.errors %}<p class="form-error">{{ form.device_type.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.alias.id_for_label }}">{{ form.alias.label }}</label>
+            {{ form.alias }}
+            <small class="text-muted">Nombre corto para identificar el equipo rápidamente.</small>
+            {% if form.alias.errors %}<p class="form-error">{{ form.alias.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.brand.id_for_label }}">{{ form.brand.label }}</label>
+            {{ form.brand }}
+            {% if form.brand.errors %}<p class="form-error">{{ form.brand.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.model.id_for_label }}">{{ form.model.label }}</label>
+            {{ form.model }}
+            {% if form.model.errors %}<p class="form-error">{{ form.model.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="{{ form.serial_number.id_for_label }}">{{ form.serial_number.label }}</label>
+          {{ form.serial_number }}
+          {% if form.serial_number.errors %}<p class="form-error">{{ form.serial_number.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <!-- Especificaciones técnicas -->
+        <h3 style="font-size:.9375rem;margin-top:.5rem;margin-bottom:.75rem;color:var(--color-text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Especificaciones técnicas</h3>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.operating_system.id_for_label }}">{{ form.operating_system.label }}</label>
+            {{ form.operating_system }}
+            {% if form.operating_system.errors %}<p class="form-error">{{ form.operating_system.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.cpu.id_for_label }}">{{ form.cpu.label }}</label>
+            {{ form.cpu }}
+            {% if form.cpu.errors %}<p class="form-error">{{ form.cpu.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.ram_description.id_for_label }}">{{ form.ram_description.label }}</label>
+            {{ form.ram_description }}
+            {% if form.ram_description.errors %}<p class="form-error">{{ form.ram_description.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.storage_description.id_for_label }}">{{ form.storage_description.label }}</label>
+            {{ form.storage_description }}
+            {% if form.storage_description.errors %}<p class="form-error">{{ form.storage_description.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="{{ form.gpu_description.id_for_label }}">{{ form.gpu_description.label }}</label>
+          {{ form.gpu_description }}
+          {% if form.gpu_description.errors %}<p class="form-error">{{ form.gpu_description.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="{{ form.permanent_notes.id_for_label }}">{{ form.permanent_notes.label }}</label>
+          {{ form.permanent_notes }}
+          <small class="text-muted">Observaciones que aplican a todos los trabajos futuros (ej: "equipo sin batería").</small>
+          {% if form.permanent_notes.errors %}<p class="form-error">{{ form.permanent_notes.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <!-- Confirmación de duplicados -->
+        {% if duplicates %}
+        <div class="form-group" style="display:flex;align-items:center;gap:.5rem;background:var(--color-warning-light);padding:.75rem;border-radius:var(--radius);">
+          <input type="checkbox" name="confirm_duplicate" id="confirm_duplicate" value="1">
+          <label for="confirm_duplicate" style="margin-bottom:0;font-weight:600;">Confirmo que este equipo es diferente a los duplicados</label>
+        </div>
+        {% endif %}
+
+        <!-- Botones -->
+        <div class="form-submit d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            {% if device %}Guardar cambios{% else %}Registrar equipo{% endif %}
+          </button>
+          {% if device %}
+            <a href="{% url 'device-detail' device.pk %}" class="btn btn-secondary">Cancelar</a>
+          {% elif customer %}
+            <a href="{% url 'customer-detail' customer.pk %}" class="btn btn-secondary">Cancelar</a>
+          {% else %}
+            <a href="{% url 'customer-list' %}" class="btn btn-secondary">Cancelar</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

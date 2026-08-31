@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Vincular Telegram — PC Service Manager{% endblock %}
+
+{% block page_title %}Vincular Telegram{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 2rem auto;">
+  <div class="card">
+    <div class="card-header">
+      <h2 style="margin: 0; font-size: 1.25rem;">Vincular cuenta de Telegram</h2>
+    </div>
+    <div class="card-body">
+
+      {% if plain_code %}
+        <div class="alert alert-success" role="alert" style="margin-bottom: 1.5rem;">
+          <strong>¡Código generado!</strong> Tiene validez de 10 minutos.
+        </div>
+
+        <p>Enviá el siguiente comando al bot de Telegram:</p>
+
+        <div style="
+          background: #1e1e1e;
+          color: #e8e8e8;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 1.4rem;
+          font-weight: bold;
+          letter-spacing: 0.15em;
+          padding: 1.25rem 1.5rem;
+          border-radius: 8px;
+          text-align: center;
+          margin: 1rem 0;
+          user-select: all;
+        ">
+          /vincular {{ plain_code }}
+        </div>
+
+        <p style="color: #666; font-size: 0.875rem; margin-top: 0.5rem;">
+          Expira el <strong>{{ expires_at|date:"d/m/Y" }}</strong> a las <strong>{{ expires_at|date:"H:i" }}</strong>.
+          Una vez usado, el código queda inválido.
+        </p>
+
+        <div class="alert" style="
+          background: #fff8e1;
+          border-left: 4px solid #f59e0b;
+          padding: 0.75rem 1rem;
+          border-radius: 4px;
+          margin-top: 1rem;
+          font-size: 0.875rem;
+        ">
+          <strong>Instrucciones:</strong>
+          <ol style="margin: 0.5rem 0 0 1.25rem; padding: 0;">
+            <li>Abrí Telegram y buscá el bot del sistema.</li>
+            <li>Enviá el comando que aparece arriba tal como está.</li>
+            <li>El bot confirmará que la cuenta quedó vinculada.</li>
+          </ol>
+        </div>
+
+        <hr style="margin: 1.5rem 0;">
+        <p style="color: #888; font-size: 0.875rem;">
+          ¿Necesitás un nuevo código? Hacé clic en el botón de abajo para generar uno nuevo (el anterior quedará invalidado).
+        </p>
+      {% else %}
+        <p>
+          Generá un código temporal para vincular tu cuenta de Telegram con el sistema.
+          El código tiene validez de <strong>10 minutos</strong> y solo puede usarse una vez.
+        </p>
+        <p>
+          Una vez vinculada tu cuenta, podrás recibir notificaciones y consultar órdenes directamente desde Telegram.
+        </p>
+      {% endif %}
+
+      <form method="post" style="margin-top: 1rem;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">
+          {% if plain_code %}Generar nuevo código{% else %}Generar código de vinculación{% endif %}
+        </button>
+        <a href="/" class="btn btn-ghost" style="margin-left: 0.5rem;">Volver al inicio</a>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

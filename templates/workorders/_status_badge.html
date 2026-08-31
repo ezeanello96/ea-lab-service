@@ -1,0 +1,18 @@
+{% comment %}
+Partial: badge de estado para órdenes de trabajo.
+Variables: status (str), label (str)
+{% endcomment %}
+{% if status == "RECEIVED" %}<span class="badge badge-info">{{ label }}</span>
+{% elif status == "PENDING_DIAGNOSIS" %}<span class="badge badge-neutral">{{ label }}</span>
+{% elif status == "IN_DIAGNOSIS" %}<span class="badge badge-primary">{{ label }}</span>
+{% elif status == "AWAITING_APPROVAL" %}<span class="badge badge-warning">{{ label }}</span>
+{% elif status == "APPROVED_FOR_REPAIR" %}<span class="badge badge-success">{{ label }}</span>
+{% elif status == "REJECTED" %}<span class="badge badge-danger">{{ label }}</span>
+{% elif status == "WAITING_PART" %}<span class="badge badge-warning">{{ label }}</span>
+{% elif status == "IN_REPAIR" %}<span class="badge badge-primary">{{ label }}</span>
+{% elif status == "IN_TESTING" %}<span class="badge badge-info">{{ label }}</span>
+{% elif status == "READY_FOR_PICKUP" %}<span class="badge badge-success">{{ label }}</span>
+{% elif status == "DELIVERED" %}<span class="badge badge-neutral">{{ label }}</span>
+{% elif status == "UNREPAIRABLE" %}<span class="badge badge-danger">{{ label }}</span>
+{% elif status == "CANCELLED" %}<span class="badge badge-neutral">{{ label }}</span>
+{% else %}<span class="badge badge-neutral">{{ label }}</span>{% endif %}

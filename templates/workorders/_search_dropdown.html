@@ -1,0 +1,45 @@
+{% comment %}
+Parcial HTMX: dropdown de búsqueda global en la navbar.
+Variables: q, customers, devices, orders
+{% endcomment %}
+{% if q|length >= 2 %}
+<div style="position:absolute;left:0;right:0;top:2px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);max-height:480px;overflow-y:auto;z-index:400;">
+  {% if customers %}
+  <div style="padding:.375rem 1rem .125rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--color-text-secondary);border-bottom:1px solid var(--color-border);background:var(--color-bg);">Clientes</div>
+  {% for c in customers %}
+  <a href="{% url 'customer-detail' c.pk %}" style="display:flex;align-items:baseline;gap:.5rem;padding:.5rem 1rem;font-size:.875rem;color:var(--color-text);text-decoration:none;transition:background 120ms;" onmouseover="this.style.background='var(--color-bg)'" onmouseout="this.style.background='transparent'">
+    <strong>{{ c.full_name }}</strong>
+    <span class="text-muted" style="font-size:.8125rem;">{{ c.phone }}</span>
+  </a>
+  {% endfor %}
+  {% endif %}
+
+  {% if devices %}
+  <div style="padding:.375rem 1rem .125rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--color-text-secondary);border-bottom:1px solid var(--color-border);border-top:1px solid var(--color-border);background:var(--color-bg);">Equipos</div>
+  {% for d in devices %}
+  <a href="{% url 'device-detail' d.pk %}" style="display:flex;align-items:baseline;gap:.5rem;padding:.5rem 1rem;font-size:.875rem;color:var(--color-text);text-decoration:none;" onmouseover="this.style.background='var(--color-bg)'" onmouseout="this.style.background='transparent'">
+    <strong>{{ d }}</strong>
+    <span class="text-muted" style="font-size:.8125rem;">{{ d.customer.full_name }}</span>
+  </a>
+  {% endfor %}
+  {% endif %}
+
+  {% if orders %}
+  <div style="padding:.375rem 1rem .125rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--color-text-secondary);border-bottom:1px solid var(--color-border);border-top:1px solid var(--color-border);background:var(--color-bg);">Órdenes</div>
+  {% for o in orders %}
+  <a href="{% url 'workorder-detail' o.pk %}" style="display:flex;align-items:baseline;gap:.5rem;padding:.5rem 1rem;font-size:.875rem;color:var(--color-text);text-decoration:none;" onmouseover="this.style.background='var(--color-bg)'" onmouseout="this.style.background='transparent'">
+    <strong style="font-family:monospace;">{{ o.number }}</strong>
+    <span class="text-muted" style="font-size:.8125rem;">{{ o.customer.full_name }}</span>
+  </a>
+  {% endfor %}
+  {% endif %}
+
+  {% if not customers and not devices and not orders %}
+  <div style="padding:1rem;text-align:center;color:var(--color-text-muted);font-size:.875rem;">Sin resultados para "{{ q }}"</div>
+  {% endif %}
+
+  <div style="padding:.375rem 1rem;border-top:1px solid var(--color-border);font-size:.8125rem;text-align:right;background:var(--color-bg);">
+    <a href="{% url 'global-search' %}?q={{ q }}" class="link">Ver todos los resultados &rarr;</a>
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Búsqueda: {{ q }} — PC Service Manager{% endblock %}
+{% block page_title %}Resultados de búsqueda{% endblock %}
+
+{% block content %}
+<div class="page-content">
+  <div class="section-header" style="margin-bottom:1.25rem;">
+    <h1 style="font-size:1.5rem;font-weight:700;">
+      Resultados para "{{ q }}"
+    </h1>
+  </div>
+
+  {% if q|length < 2 %}
+  <div class="card"><div class="card-body" style="padding:2rem;text-align:center;color:var(--color-text-muted);">
+    Ingresá al menos 2 caracteres para buscar.
+  </div></div>
+  {% else %}
+
+  {% if customers %}
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header"><h2 class="card-title">Clientes ({{ customers|length }})</h2></div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th></th></tr></thead>
+        <tbody>
+          {% for c in customers %}
+          <tr>
+            <td><a href="{% url 'customer-detail' c.pk %}" class="link" style="font-weight:500;">{{ c.full_name }}</a></td>
+            <td>{{ c.phone }}</td>
+            <td>{{ c.email|default:"—" }}</td>
+            <td style="text-align:right;"><a href="{% url 'customer-detail' c.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if devices %}
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header"><h2 class="card-title">Equipos ({{ devices|length }})</h2></div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Equipo</th><th>Serie</th><th>Cliente</th><th></th></tr></thead>
+        <tbody>
+          {% for d in devices %}
+          <tr>
+            <td><a href="{% url 'device-detail' d.pk %}" class="link" style="font-weight:500;">{{ d }}</a></td>
+            <td style="font-family:monospace;">{{ d.serial_number|default:"—" }}</td>
+            <td><a href="{% url 'customer-detail' d.customer.pk %}" class="link">{{ d.customer.full_name }}</a></td>
+            <td style="text-align:right;"><a href="{% url 'device-detail' d.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if orders %}
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header"><h2 class="card-title">Órdenes ({{ orders|length }})</h2></div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Número</th><th>Cliente</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          {% for o in orders %}
+          <tr>
+            <td style="font-family:monospace;font-weight:700;"><a href="{% url 'workorder-detail' o.pk %}" class="link">{{ o.number }}</a></td>
+            <td><a href="{% url 'customer-detail' o.customer.pk %}" class="link">{{ o.customer.full_name }}</a></td>
+            <td>{% include "workorders/_status_badge.html" with status=o.status label=o.get_status_display %}</td>
+            <td style="text-align:right;"><a href="{% url 'workorder-detail' o.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not customers and not devices and not orders %}
+  <div class="card">
+    <div class="card-body" style="text-align:center;padding:3rem;color:var(--color-text-muted);">
+      No se encontraron resultados para "<strong>{{ q }}</strong>".
+    </div>
+  </div>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte Financiero — PC Service Manager{% endblock %}
+{% block page_title %}Reporte Financiero{% endblock %}
+{% block nav_reportes %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.chart-container { position: relative; height: 240px; }
+.kpi-value { font-size: 1.75rem; font-weight: 700; }
+.kpi-label { font-size: .875rem; color: var(--color-text-secondary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- FILTROS -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header"><h2 class="card-title">Período</h2></div>
+    <div class="card-body">
+      <form method="get" style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Desde</label>
+          <input type="date" name="date_from" class="form-control" value="{{ date_from|date:'Y-m-d' }}">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Hasta</label>
+          <input type="date" name="date_to" class="form-control" value="{{ date_to|date:'Y-m-d' }}">
+        </div>
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="{% url 'report-financial' %}" class="btn btn-ghost">Limpiar</a>
+      </form>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="stats-grid" style="margin-bottom:1.25rem;">
+    <div class="stat-card stat-card--primary">
+      <div class="stat-card__icon">📄</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">${{ total_quoted|floatformat:0 }}</span>
+        <span class="stat-card__label">Total presupuestado (aprobado)</span>
+      </div>
+    </div>
+    <div class="stat-card stat-card--success">
+      <div class="stat-card__icon">✅</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">${{ total_collected|floatformat:0 }}</span>
+        <span class="stat-card__label">Total cobrado en el período</span>
+      </div>
+    </div>
+    <div class="stat-card {% if total_pending > 0 %}stat-card--danger{% else %}stat-card--success{% endif %}">
+      <div class="stat-card__icon">💰</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">${{ total_pending|floatformat:0 }}</span>
+        <span class="stat-card__label">Saldo pendiente de cobro</span>
+      </div>
+    </div>
+    <div class="stat-card stat-card--primary">
+      <div class="stat-card__icon">🎯</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">${{ avg_ticket|floatformat:0 }}</span>
+        <span class="stat-card__label">Ticket promedio ({{ approved_quotes_count }} presup.)</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;">
+
+    <!-- Gráfico de métodos de pago -->
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">Cobros por método de pago</h2></div>
+      <div class="card-body">
+        {% if has_payment_data %}
+        <div class="chart-container">
+          <canvas id="chartMethods"></canvas>
+        </div>
+        {% else %}
+        <p class="text-muted" style="padding:2rem;text-align:center;">Sin cobros en el período.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Resumen rápido -->
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">Resumen del período</h2></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:1rem;">
+        <div>
+          <div class="kpi-label">Período analizado</div>
+          <div style="font-weight:600;">{{ date_from|date:"d/m/Y" }} → {{ date_to|date:"d/m/Y" }}</div>
+        </div>
+        <div>
+          <div class="kpi-label">Presupuestos aprobados</div>
+          <div class="kpi-value">{{ approved_quotes_count }}</div>
+        </div>
+        <div>
+          <div class="kpi-label">Órdenes con saldo pendiente</div>
+          <div class="kpi-value" {% if pending_orders %}style="color:var(--color-danger);"{% endif %}>{{ pending_orders|length }}</div>
+        </div>
+        {% if total_quoted %}
+        <div>
+          <div class="kpi-label">Tasa de cobro</div>
+          <div class="kpi-value">
+            {% widthratio total_collected total_quoted 100 %}%
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SALDO PENDIENTE POR OT -->
+  {% if pending_orders %}
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Órdenes con saldo pendiente (listas o entregadas)</h2>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Cliente</th>
+            <th>Equipo</th>
+            <th>Estado</th>
+            <th style="text-align:right;">Total presup.</th>
+            <th style="text-align:right;">Cobrado</th>
+            <th style="text-align:right;">Saldo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in pending_orders %}
+          <tr>
+            <td><a href="{% url 'workorder-detail' item.order.pk %}" style="font-family:monospace;font-weight:700;">{{ item.order.number }}</a></td>
+            <td><a href="{% url 'customer-detail' item.order.customer.pk %}" class="link">{{ item.order.customer.full_name }}</a></td>
+            <td>{{ item.order.device }}</td>
+            <td>{% include "workorders/_status_badge.html" with status=item.order.status label=item.order.get_status_display %}</td>
+            <td style="text-align:right;">${{ item.total|floatformat:2 }}</td>
+            <td style="text-align:right;">${{ item.paid|floatformat:2 }}</td>
+            <td style="text-align:right;font-weight:700;color:var(--color-danger);">${{ item.balance|floatformat:2 }}</td>
+            <td style="text-align:right;"><a href="{% url 'workorder-detail' item.order.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="card-body" style="text-align:center;padding:2rem;color:var(--color-success);font-weight:600;">
+      ✅ No hay órdenes con saldo pendiente de cobro.
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if has_payment_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+const methodLabels = {{ method_labels_json }};
+const methodTotals = {{ method_totals_json }};
+const palette = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899'];
+
+new Chart(document.getElementById('chartMethods'), {
+  type: 'doughnut',
+  data: {
+    labels: methodLabels,
+    datasets: [{ data: methodTotals, backgroundColor: palette.slice(0, methodLabels.length), borderWidth: 2 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+});
+</script>
+{% endif %}
+{% endblock %}

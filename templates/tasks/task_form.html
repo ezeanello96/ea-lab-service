@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} — PC Service Manager{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block nav_tareas %}active{% endblock %}
+
+{% block content %}
+<div style="max-width:800px;">
+
+  <!-- Breadcrumb -->
+  <nav style="margin-bottom:1rem;font-size:.875rem;color:var(--color-text-secondary);">
+    <a href="{% url 'task-list' %}" class="link">Tareas</a>
+    &rsaquo; {{ page_title }}
+  </nav>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">{{ page_title }}</h2>
+    </div>
+    <div class="card-body">
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-error" style="margin-bottom:1rem;">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Título -->
+        <div class="form-group">
+          <label class="form-label" for="{{ form.title.id_for_label }}">
+            Título <span style="color:var(--color-danger)">*</span>
+          </label>
+          {{ form.title }}
+          {% if form.title.errors %}<p class="form-error">{{ form.title.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group">
+          <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+          {{ form.description }}
+          {% if form.description.errors %}<p class="form-error">{{ form.description.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <!-- Prioridad, Estado -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.priority.id_for_label }}">{{ form.priority.label }}</label>
+            {{ form.priority }}
+            {% if form.priority.errors %}<p class="form-error">{{ form.priority.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+            {{ form.status }}
+            {% if form.status.errors %}<p class="form-error">{{ form.status.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+
+        <!-- Fecha límite -->
+        <div class="form-group">
+          <label class="form-label" for="{{ form.due_at.id_for_label }}">{{ form.due_at.label }}</label>
+          {{ form.due_at }}
+          {% if form.due_at.errors %}<p class="form-error">{{ form.due_at.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <!-- Asignado a -->
+        <div class="form-group">
+          <label class="form-label" for="{{ form.assigned_to.id_for_label }}">{{ form.assigned_to.label }}</label>
+          {{ form.assigned_to }}
+          {% if form.assigned_to.errors %}<p class="form-error">{{ form.assigned_to.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <!-- Relaciones opcionales -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.work_order.id_for_label }}">{{ form.work_order.label }}</label>
+            {{ form.work_order }}
+            {% if form.work_order.errors %}<p class="form-error">{{ form.work_order.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.customer.id_for_label }}">{{ form.customer.label }}</label>
+            {{ form.customer }}
+            {% if form.customer.errors %}<p class="form-error">{{ form.customer.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.device.id_for_label }}">{{ form.device.label }}</label>
+            {{ form.device }}
+            {% if form.device.errors %}<p class="form-error">{{ form.device.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+
+        <!-- Recurrencia -->
+        <div class="form-group">
+          <label class="form-label" for="{{ form.recurrence_rule.id_for_label }}">{{ form.recurrence_rule.label }}</label>
+          {{ form.recurrence_rule }}
+          <small class="text-muted" style="font-size:.8125rem;">Por ejemplo: daily, weekly. Dejá en blanco si no se repite.</small>
+          {% if form.recurrence_rule.errors %}<p class="form-error">{{ form.recurrence_rule.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <!-- Botones -->
+        <div class="form-submit d-flex gap-2" style="margin-top:1.5rem;">
+          <button type="submit" class="btn btn-primary">
+            {% if task %}Guardar cambios{% else %}Crear tarea{% endif %}
+          </button>
+          <a href="{% url 'task-list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

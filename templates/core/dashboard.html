@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de control — PC Service Manager{% endblock %}
+{% block page_title %}Panel de control{% endblock %}
+{% block nav_inicio %}active{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+
+  <!-- ===== TARJETAS DE RESUMEN ===== -->
+  <div class="stats-grid">
+    <div class="stat-card stat-card--primary">
+      <div class="stat-card__icon">📋</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ stats.active_orders }}</span>
+        <span class="stat-card__label">Órdenes activas</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-card--success">
+      <div class="stat-card__icon">✅</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ stats.ready_devices }}</span>
+        <span class="stat-card__label">Equipos listos</span>
+      </div>
+    </div>
+
+    <div class="stat-card {% if stats.orders_due_soon_count > 0 %}stat-card--warning{% else %}stat-card--primary{% endif %}">
+      <div class="stat-card__icon">📅</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ stats.orders_due_soon_count }}</span>
+        <span class="stat-card__label">Entregas próximas (7 días)</span>
+      </div>
+    </div>
+
+    <div class="stat-card {% if stats.orders_no_tech_count > 0 %}stat-card--warning{% else %}stat-card--primary{% endif %}">
+      <div class="stat-card__icon">👤</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ stats.orders_no_tech_count }}</span>
+        <span class="stat-card__label">Sin técnico asignado</span>
+      </div>
+    </div>
+
+    <div class="stat-card {% if stats.overdue_tasks > 0 %}stat-card--danger{% else %}stat-card--primary{% endif %}">
+      <div class="stat-card__icon">⚠️</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ stats.overdue_tasks }}</span>
+        <span class="stat-card__label">Tareas vencidas</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-card--danger">
+      <div class="stat-card__icon">💰</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">${{ stats.pending_balance|floatformat:0 }}</span>
+        <span class="stat-card__label">Saldo pendiente</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ACCESOS RÁPIDOS ===== -->
+  <div class="section-header" style="margin-bottom:1rem;">
+    <h2 class="section-title">Accesos rápidos</h2>
+  </div>
+
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:2rem;">
+    <a href="{% url 'customer-create' %}" class="btn btn-primary">+ Nuevo cliente</a>
+    <a href="{% url 'workorder-create' %}" class="btn btn-primary">+ Nueva orden</a>
+    <a href="{% url 'workorder-kanban' %}" class="btn btn-secondary">Ver Kanban</a>
+    <a href="{% url 'workorder-list' %}?status=READY_FOR_PICKUP" class="btn btn-secondary">Listos para retirar</a>
+    <a href="{% url 'customer-list' %}" class="btn btn-secondary">Ver clientes</a>
+    <a href="{% url 'report-orders' %}" class="btn btn-secondary">Reportes</a>
+  </div>
+
+  <!-- ===== ENTREGAS PRÓXIMAS ===== -->
+  {% if orders_due_soon %}
+  <div class="section-header" style="margin-bottom:1rem;">
+    <h2 class="section-title">Entregas prometidas en los próximos 7 días</h2>
+    <a href="{% url 'workorder-list' %}" class="btn btn-ghost btn-sm">Ver todas</a>
+  </div>
+
+  <div class="card" style="margin-bottom:2rem;">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Cliente</th>
+            <th>Equipo</th>
+            <th>Estado</th>
+            <th>Entrega prometida</th>
+            <th>Técnico</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders_due_soon %}
+          <tr>
+            <td><a href="{% url 'workorder-detail' order.pk %}" style="font-weight:700;font-family:monospace;">{{ order.number }}</a></td>
+            <td><a href="{% url 'customer-detail' order.customer.pk %}" class="link">{{ order.customer.full_name }}</a></td>
+            <td>{{ order.device }}</td>
+            <td>{% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}</td>
+            <td style="font-weight:600;">{{ order.promised_delivery_at|date:"d/m/Y" }}</td>
+            <td>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"—" }}</td>
+            <td style="text-align:right;"><a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ===== SIN TÉCNICO ===== -->
+  {% if orders_no_tech %}
+  <div class="section-header" style="margin-bottom:1rem;">
+    <h2 class="section-title">Órdenes activas sin técnico asignado</h2>
+  </div>
+
+  <div class="card" style="margin-bottom:2rem;">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Cliente</th>
+            <th>Equipo</th>
+            <th>Estado</th>
+            <th>Prioridad</th>
+            <th>Ingreso</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders_no_tech %}
+          <tr>
+            <td><a href="{% url 'workorder-detail' order.pk %}" style="font-weight:700;font-family:monospace;">{{ order.number }}</a></td>
+            <td><a href="{% url 'customer-detail' order.customer.pk %}" class="link">{{ order.customer.full_name }}</a></td>
+            <td>{{ order.device }}</td>
+            <td>{% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}</td>
+            <td>{% include "workorders/_priority_badge.html" with priority=order.priority label=order.get_priority_display %}</td>
+            <td>{{ order.received_at|date:"d/m/Y" }}</td>
+            <td style="text-align:right;"><a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ===== ÓRDENES URGENTES ===== -->
+  {% if urgent_orders %}
+  <div class="section-header" style="margin-bottom:1rem;">
+    <h2 class="section-title">Órdenes urgentes o de alta prioridad</h2>
+    <a href="{% url 'workorder-list' %}" class="btn btn-ghost btn-sm">Ver todas</a>
+  </div>
+
+  <div class="card" style="margin-bottom:2rem;">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Cliente</th>
+            <th>Equipo</th>
+            <th>Estado</th>
+            <th>Prioridad</th>
+            <th>Asignado</th>
+            <th>Ingreso</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in urgent_orders %}
+          <tr>
+            <td><a href="{% url 'workorder-detail' order.pk %}" style="font-weight:700;font-family:monospace;">{{ order.number }}</a></td>
+            <td><a href="{% url 'customer-detail' order.customer.pk %}" class="link">{{ order.customer.full_name }}</a></td>
+            <td>{{ order.device }}</td>
+            <td>{% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}</td>
+            <td>{% include "workorders/_priority_badge.html" with priority=order.priority label=order.get_priority_display %}</td>
+            <td>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"—" }}</td>
+            <td>{{ order.received_at|date:"d/m/Y" }}</td>
+            <td style="text-align:right;"><a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ===== ÚLTIMAS ÓRDENES INGRESADAS ===== -->
+  <div class="section-header" style="margin-bottom:1rem;">
+    <h2 class="section-title">Últimas órdenes ingresadas</h2>
+    <a href="{% url 'workorder-list' %}" class="btn btn-ghost btn-sm">Ver todas</a>
+  </div>
+
+  {% if latest_orders %}
+  <div class="card" style="margin-bottom:2rem;">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Cliente</th>
+            <th>Equipo</th>
+            <th>Estado</th>
+            <th>Prioridad</th>
+            <th>Técnico</th>
+            <th>Ingreso</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in latest_orders %}
+          <tr>
+            <td><a href="{% url 'workorder-detail' order.pk %}" style="font-weight:700;font-family:monospace;">{{ order.number }}</a></td>
+            <td><a href="{% url 'customer-detail' order.customer.pk %}" class="link">{{ order.customer.full_name }}</a></td>
+            <td>{{ order.device }}</td>
+            <td>{% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}</td>
+            <td>{% include "workorders/_priority_badge.html" with priority=order.priority label=order.get_priority_display %}</td>
+            <td>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"—" }}</td>
+            <td>{{ order.received_at|date:"d/m/Y" }}</td>
+            <td style="text-align:right;"><a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="construction-banner">
+    <div class="construction-icon">🎉</div>
+    <div class="construction-body">
+      <h3>No hay órdenes registradas</h3>
+      <p>Aún no hay órdenes de trabajo en el sistema.</p>
+      <a href="{% url 'workorder-create' %}" class="btn btn-primary" style="margin-top:.5rem;">Crear primera orden</a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

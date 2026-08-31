@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Tiempos — PC Service Manager{% endblock %}
+{% block page_title %}Reporte de Tiempos{% endblock %}
+{% block nav_reportes %}active{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- FILTROS -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header"><h2 class="card-title">Filtros</h2></div>
+    <div class="card-body">
+      <form method="get" style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Entrega desde</label>
+          <input type="date" name="date_from" class="form-control" value="{{ date_from|date:'Y-m-d' }}">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Entrega hasta</label>
+          <input type="date" name="date_to" class="form-control" value="{{ date_to|date:'Y-m-d' }}">
+        </div>
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="{% url 'report-times' %}" class="btn btn-ghost">Limpiar</a>
+      </form>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="stats-grid" style="margin-bottom:1.25rem;">
+    <div class="stat-card stat-card--primary">
+      <div class="stat-card__icon">📋</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ count }}</span>
+        <span class="stat-card__label">Órdenes entregadas</span>
+      </div>
+    </div>
+    <div class="stat-card stat-card--primary">
+      <div class="stat-card__icon">⏱️</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ avg_hours }}h</span>
+        <span class="stat-card__label">Tiempo promedio</span>
+      </div>
+    </div>
+    <div class="stat-card stat-card--primary">
+      <div class="stat-card__icon">📅</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ avg_days }} días</span>
+        <span class="stat-card__label">Días promedio</span>
+      </div>
+    </div>
+    <div class="stat-card {% if overdue_active %}stat-card--danger{% else %}stat-card--success{% endif %}">
+      <div class="stat-card__icon">⚠️</div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ overdue_active|length }}</span>
+        <span class="stat-card__label">Activas fuera de plazo</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;">
+
+    <!-- Tiempos por OT -->
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">Tiempos de resolución (días)</h2></div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Cliente</th>
+              <th>Días</th>
+              <th>Horas</th>
+              <th>Plazo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in orders_with_time %}
+            <tr>
+              <td><a href="{% url 'workorder-detail' item.order.pk %}" style="font-family:monospace;font-weight:700;">{{ item.order.number }}</a></td>
+              <td>{{ item.order.customer.full_name }}</td>
+              <td>{{ item.days }}</td>
+              <td>{{ item.hours }}</td>
+              <td>
+                {% if item.overdue %}
+                <span style="color:var(--color-danger);font-weight:600;">Fuera de plazo</span>
+                {% else %}
+                <span style="color:var(--color-success);">En plazo</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:1.5rem;">
+                No hay órdenes entregadas en el rango seleccionado.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Por técnico -->
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">Promedio por técnico</h2></div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Técnico</th>
+              <th>OTs</th>
+              <th>Promedio (días)</th>
+              <th>Promedio (horas)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in by_tech %}
+            <tr>
+              <td>{{ item.tech.get_full_name|default:item.tech.username }}</td>
+              <td>{{ item.count }}</td>
+              <td>{{ item.avg_days }}</td>
+              <td>{{ item.avg_hours }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" style="text-align:center;color:var(--color-text-muted);padding:1.5rem;">
+                Sin datos de técnicos en el período.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FUERA DE PLAZO (activas) -->
+  {% if overdue_active %}
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title" style="color:var(--color-danger);">Órdenes activas que superaron la entrega estimada</h2>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Cliente</th>
+            <th>Equipo</th>
+            <th>Entrega prometida</th>
+            <th>Técnico</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in overdue_active %}
+          <tr>
+            <td><a href="{% url 'workorder-detail' order.pk %}" style="font-family:monospace;font-weight:700;">{{ order.number }}</a></td>
+            <td>{{ order.customer.full_name }}</td>
+            <td>{{ order.device }}</td>
+            <td style="color:var(--color-danger);font-weight:600;">{{ order.promised_delivery_at|date:"d/m/Y H:i" }}</td>
+            <td>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"Sin asignar" }}</td>
+            <td style="text-align:right;"><a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

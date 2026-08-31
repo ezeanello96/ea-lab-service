@@ -1,0 +1,123 @@
+{% comment %}
+  Partial: tarjeta de tarea individual.
+  Variables esperadas: task, section
+{% endcomment %}
+<div class="card" style="padding:0;">
+  <div class="card-body" style="padding:.75rem 1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+
+    <!-- Título y metadatos -->
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.25rem;">
+        <span style="font-weight:600;font-size:.9375rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:360px;" title="{{ task.title }}">
+          {{ task.title }}
+        </span>
+
+        <!-- Badge de prioridad -->
+        {% if task.priority == "URGENT" %}
+          <span style="background:#fef2f2;color:#dc2626;font-size:.6875rem;font-weight:700;padding:.125rem .5rem;border-radius:99px;white-space:nowrap;">URGENTE</span>
+        {% elif task.priority == "HIGH" %}
+          <span style="background:#fff7ed;color:#ea580c;font-size:.6875rem;font-weight:700;padding:.125rem .5rem;border-radius:99px;white-space:nowrap;">ALTA</span>
+        {% elif task.priority == "NORMAL" %}
+          <span style="background:#f0fdf4;color:#16a34a;font-size:.6875rem;font-weight:500;padding:.125rem .5rem;border-radius:99px;white-space:nowrap;">NORMAL</span>
+        {% else %}
+          <span style="background:var(--color-bg);color:var(--color-text-secondary);font-size:.6875rem;font-weight:500;padding:.125rem .5rem;border-radius:99px;white-space:nowrap;">BAJA</span>
+        {% endif %}
+
+        <!-- Indicador pospuesta -->
+        {% if task.is_snoozed %}
+          <span style="background:#f5f3ff;color:#7c3aed;font-size:.6875rem;font-weight:500;padding:.125rem .5rem;border-radius:99px;white-space:nowrap;">Pospuesta</span>
+        {% endif %}
+      </div>
+
+      <div style="display:flex;gap:1rem;font-size:.8125rem;color:var(--color-text-secondary);flex-wrap:wrap;">
+        {% if task.due_at %}
+          <span>
+            Vence:
+            {% if section == "overdue" %}
+              <strong style="color:var(--color-danger);">{{ task.due_at|date:"d/m/Y H:i" }}</strong>
+            {% else %}
+              {{ task.due_at|date:"d/m/Y H:i" }}
+            {% endif %}
+          </span>
+        {% endif %}
+        {% if task.assigned_to %}
+          <span>Asignado: {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</span>
+        {% endif %}
+        {% if task.work_order %}
+          <span>Orden: {{ task.work_order.number }}</span>
+        {% endif %}
+        {% if task.customer %}
+          <span>Cliente: {{ task.customer.full_name }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Acciones -->
+    <div style="display:flex;gap:.5rem;align-items:center;flex-shrink:0;">
+
+      <!-- Completar -->
+      <form method="post" action="{% url 'task-complete' task.pk %}" style="display:inline;"
+            hx-post="{% url 'task-complete' task.pk %}"
+            hx-confirm="¿Marcar la tarea «{{ task.title }}» como completada?"
+            hx-target="body"
+            hx-swap="none">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-sm" title="Completar tarea">
+          Completar
+        </button>
+      </form>
+
+      <!-- Posponer (dropdown) -->
+      <div style="position:relative;display:inline-block;" class="snooze-dropdown">
+        <button type="button" class="btn btn-secondary btn-sm"
+                onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">
+          Posponer ▾
+        </button>
+        <div style="display:none;position:absolute;right:0;top:100%;margin-top:.25rem;background:#fff;border:1px solid var(--color-border);border-radius:var(--radius);box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:200;min-width:140px;">
+          {% for hours, label in snooze_options %}
+          <form method="post" action="{% url 'task-snooze' task.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="hours" value="{{ hours }}">
+            <button type="submit" style="display:block;width:100%;text-align:left;padding:.5rem .75rem;background:none;border:none;cursor:pointer;font-size:.875rem;color:var(--color-text);"
+                    onmouseover="this.style.background='var(--color-bg)'" onmouseout="this.style.background='none'">
+              {{ label }}
+            </button>
+          </form>
+          {% empty %}
+          <form method="post" action="{% url 'task-snooze' task.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="hours" value="1">
+            <button type="submit" style="display:block;width:100%;text-align:left;padding:.5rem .75rem;background:none;border:none;cursor:pointer;font-size:.875rem;">1 hora</button>
+          </form>
+          <form method="post" action="{% url 'task-snooze' task.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="hours" value="4">
+            <button type="submit" style="display:block;width:100%;text-align:left;padding:.5rem .75rem;background:none;border:none;cursor:pointer;font-size:.875rem;">4 horas</button>
+          </form>
+          <form method="post" action="{% url 'task-snooze' task.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="hours" value="24">
+            <button type="submit" style="display:block;width:100%;text-align:left;padding:.5rem .75rem;background:none;border:none;cursor:pointer;font-size:.875rem;">1 día</button>
+          </form>
+          <form method="post" action="{% url 'task-snooze' task.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="hours" value="48">
+            <button type="submit" style="display:block;width:100%;text-align:left;padding:.5rem .75rem;background:none;border:none;cursor:pointer;font-size:.875rem;">2 días</button>
+          </form>
+          <form method="post" action="{% url 'task-snooze' task.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="hours" value="168">
+            <button type="submit" style="display:block;width:100%;text-align:left;padding:.5rem .75rem;background:none;border:none;cursor:pointer;font-size:.875rem;">1 semana</button>
+          </form>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Editar -->
+      <a href="{% url 'task-update' task.pk %}" class="btn btn-secondary btn-sm" title="Editar tarea">
+        Editar
+      </a>
+
+    </div>
+  </div>
+</div>

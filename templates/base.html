@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema de gestión para servicio técnico de PCs">
+  <title>{% block title %}PC Service Manager{% endblock %}</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'app/css/main.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="{% if request.user.is_authenticated %}layout-authenticated{% else %}layout-public{% endif %}">
+
+{% if request.user.is_authenticated %}
+<!-- ===== SIDEBAR ===== -->
+<nav class="sidebar" id="sidebar" aria-label="Navegación principal">
+  <div class="sidebar-header">
+    <span class="sidebar-logo">🔧</span>
+    <span class="sidebar-title">PC Service</span>
+    <button class="sidebar-close" id="sidebarClose" aria-label="Cerrar menú" title="Cerrar">✕</button>
+  </div>
+
+  <ul class="sidebar-nav">
+    <li class="sidebar-nav-item {% block nav_inicio %}{% endblock %}">
+      <a href="{% url 'dashboard' %}" class="sidebar-nav-link">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Inicio</span>
+      </a>
+    </li>
+    <li class="sidebar-nav-item {% block nav_clientes %}{% endblock %}">
+      <a href="{% url 'customer-list' %}" class="sidebar-nav-link">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Clientes</span>
+      </a>
+    </li>
+    <li class="sidebar-nav-item {% block nav_equipos %}{% endblock %}">
+      <a href="{% url 'customer-list' %}" class="sidebar-nav-link">
+        <span class="nav-icon">💻</span>
+        <span class="nav-label">Equipos</span>
+      </a>
+    </li>
+    <li class="sidebar-nav-item {% block nav_ordenes %}{% endblock %}">
+      <a href="{% url 'workorder-list' %}" class="sidebar-nav-link">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Órdenes</span>
+      </a>
+    </li>
+    <li class="sidebar-nav-item {% block nav_tareas %}{% endblock %}">
+      <a href="{% url 'task-list' %}" class="sidebar-nav-link">
+        <span class="nav-icon">✅</span>
+        <span class="nav-label">Tareas</span>
+      </a>
+    </li>
+    <li class="sidebar-nav-item {% block nav_reportes %}{% endblock %}">
+      <a href="{% url 'report-orders' %}" class="sidebar-nav-link">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Reportes</span>
+      </a>
+    </li>
+    {% if request.user.is_staff %}
+    <li class="sidebar-nav-item {% block nav_usuarios %}{% endblock %}">
+      <a href="{% url 'user-list' %}" class="sidebar-nav-link">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Usuarios</span>
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+
+  <div class="sidebar-footer">
+    <ul class="sidebar-nav">
+      <li class="sidebar-nav-item {% block nav_telegram %}{% endblock %}">
+        <a href="{% url 'telegram-pair' %}" class="sidebar-nav-link">
+          <span class="nav-icon">✈️</span>
+          <span class="nav-label">Vincular Telegram</span>
+        </a>
+      </li>
+      <li class="sidebar-nav-item {% block nav_config %}{% endblock %}">
+        <a href="/admin/" class="sidebar-nav-link">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Configuración</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ===== OVERLAY MÓVIL ===== -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ===== LAYOUT PRINCIPAL ===== -->
+<div class="main-wrapper">
+  <!-- NAVBAR TOP -->
+  <header class="navbar" role="banner">
+    <button class="navbar-toggle" id="sidebarToggle" aria-label="Abrir menú" title="Menú">
+      <span class="hamburger"></span>
+      <span class="hamburger"></span>
+      <span class="hamburger"></span>
+    </button>
+    <div class="navbar-brand">
+      <span>{% block page_title %}Panel de control{% endblock %}</span>
+    </div>
+    <div class="navbar-search" style="flex:1;max-width:360px;margin:0 1rem;">
+      <form method="get" action="{% url 'global-search' %}" role="search">
+        <input type="search" name="q" class="form-control" placeholder="Buscar cliente, equipo u orden..."
+               value="{{ request.GET.q }}" style="height:36px;font-size:.875rem;"
+               hx-get="{% url 'global-search' %}" hx-trigger="input changed delay:400ms"
+               hx-target="#search-results-dropdown" hx-swap="innerHTML">
+      </form>
+      <div id="search-results-dropdown" style="position:relative;z-index:300;"></div>
+    </div>
+    <div class="navbar-actions">
+      <span class="navbar-user">{{ request.user.get_full_name|default:request.user.username }}</span>
+      <form method="post" action="{% url 'logout' %}" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-ghost">Salir</button>
+      </form>
+    </div>
+  </header>
+
+  <!-- MENSAJES -->
+  {% include "partials/messages.html" %}
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="main-content" id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="app-footer">
+    <p>PC Service Manager &copy; {{ "now"|date:"Y" }} &mdash; Todos los derechos reservados.</p>
+  </footer>
+</div>
+
+{% else %}
+<!-- Layout público (login, etc.) -->
+<main class="public-main">
+  {% include "partials/messages.html" %}
+  {% block content %}{% endblock %}
+</main>
+{% endif %}
+
+<!-- HTMX -->
+<script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+<script src="{% static 'app/js/main.js' %}" defer></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Tareas — PC Service Manager{% endblock %}
+{% block page_title %}Tareas{% endblock %}
+{% block nav_tareas %}active{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- Encabezado -->
+  <div class="section-header" style="margin-bottom:1.25rem;">
+    <h1 style="font-size:1.5rem;font-weight:700;">Tareas</h1>
+    <a href="{% url 'task-create' %}" class="btn btn-primary">+ Nueva tarea</a>
+  </div>
+
+  {% comment %}
+    Sección de tareas vencidas
+  {% endcomment %}
+  {% if overdue %}
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--color-danger);margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem;">
+      <span>Vencidas</span>
+      <span style="background:var(--color-danger);color:#fff;font-size:.75rem;padding:.125rem .5rem;border-radius:99px;">{{ overdue|length }}</span>
+    </h2>
+    <div style="display:flex;flex-direction:column;gap:.5rem;">
+      {% for task in overdue %}
+        {% include "tasks/_task_card.html" with task=task section="overdue" %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% comment %}
+    Sección hoy
+  {% endcomment %}
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--color-text);margin-bottom:.75rem;">
+      Hoy
+      {% if today %}
+        <span style="background:var(--color-border);color:var(--color-text-secondary);font-size:.75rem;padding:.125rem .5rem;border-radius:99px;font-weight:500;">{{ today|length }}</span>
+      {% endif %}
+    </h2>
+    {% if today %}
+    <div style="display:flex;flex-direction:column;gap:.5rem;">
+      {% for task in today %}
+        {% include "tasks/_task_card.html" with task=task section="today" %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted" style="font-size:.875rem;">No hay tareas para hoy.</p>
+    {% endif %}
+  </div>
+
+  {% comment %}
+    Sección mañana
+  {% endcomment %}
+  {% if tomorrow %}
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--color-text);margin-bottom:.75rem;">
+      Mañana
+      <span style="background:var(--color-border);color:var(--color-text-secondary);font-size:.75rem;padding:.125rem .5rem;border-radius:99px;font-weight:500;">{{ tomorrow|length }}</span>
+    </h2>
+    <div style="display:flex;flex-direction:column;gap:.5rem;">
+      {% for task in tomorrow %}
+        {% include "tasks/_task_card.html" with task=task section="tomorrow" %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% comment %}
+    Sección próximas
+  {% endcomment %}
+  {% if upcoming %}
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--color-text);margin-bottom:.75rem;">Próximas</h2>
+    <div style="display:flex;flex-direction:column;gap:.5rem;">
+      {% for task in upcoming %}
+        {% include "tasks/_task_card.html" with task=task section="upcoming" %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% comment %}
+    Sección sin fecha
+  {% endcomment %}
+  {% if no_date %}
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--color-text-secondary);margin-bottom:.75rem;">Sin fecha límite</h2>
+    <div style="display:flex;flex-direction:column;gap:.5rem;">
+      {% for task in no_date %}
+        {% include "tasks/_task_card.html" with task=task section="no_date" %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not overdue and not today and not tomorrow and not upcoming and not no_date %}
+  <div class="card">
+    <div class="card-body" style="text-align:center;padding:3rem;">
+      <p class="text-muted">No hay tareas activas. ¡Todo al día!</p>
+      <a href="{% url 'task-create' %}" class="btn btn-primary" style="margin-top:1rem;">Crear primera tarea</a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

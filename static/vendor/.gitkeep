@@ -1,0 +1,5 @@
+# Este directorio debe contener htmx.min.js
+# Descargarlo con:
+#   curl -Lo static/vendor/htmx.min.js https://unpkg.com/htmx.org@2/dist/htmx.min.js
+# O desde Docker:
+#   RUN curl -Lo /app/static/vendor/htmx.min.js https://unpkg.com/htmx.org@2/dist/htmx.min.js

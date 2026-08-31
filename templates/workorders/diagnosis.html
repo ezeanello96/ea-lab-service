@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Diagnóstico — {{ order.number }} — PC Service Manager{% endblock %}
+{% block page_title %}Diagnóstico{% endblock %}
+{% block nav_ordenes %}active{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- Breadcrumb -->
+  <nav style="margin-bottom:1rem;font-size:.875rem;color:var(--color-text-secondary);">
+    <a href="{% url 'workorder-list' %}" class="link">Órdenes</a>
+    &rsaquo; <a href="{% url 'workorder-detail' order.pk %}" class="link">{{ order.number }}</a>
+    &rsaquo; Diagnóstico
+  </nav>
+
+  <!-- Cabecera -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;">
+      <div>
+        <h1 style="font-size:1.25rem;font-weight:700;margin-bottom:.25rem;">
+          Diagnóstico — {{ order.number }}
+        </h1>
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:.875rem;color:var(--color-text-secondary);">
+            Estado de la orden:
+          </span>
+          {% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}
+          <span style="font-size:.875rem;color:var(--color-text-secondary);margin-left:.5rem;">
+            Diagnóstico:
+          </span>
+          {% if diagnosis.is_final %}
+          <span style="display:inline-flex;align-items:center;padding:.25rem .625rem;border-radius:9999px;font-size:.75rem;font-weight:600;background:#dcfce7;color:#166534;">
+            FINALIZADO
+          </span>
+          {% else %}
+          <span style="display:inline-flex;align-items:center;padding:.25rem .625rem;border-radius:9999px;font-size:.75rem;font-weight:600;background:#fef9c3;color:#854d0e;">
+            BORRADOR
+          </span>
+          {% endif %}
+        </div>
+      </div>
+      <a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">
+        Volver a la orden
+      </a>
+    </div>
+  </div>
+
+  {% if diagnosis.is_final %}
+  <!-- Vista solo lectura cuando el diagnóstico está finalizado -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Diagnóstico finalizado</h2>
+    </div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:1.25rem;">
+      {% if diagnosis.reported_problem_summary %}
+      <div>
+        <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.05em;">Resumen del problema reportado</p>
+        <p style="white-space:pre-line;margin-bottom:0;">{{ diagnosis.reported_problem_summary }}</p>
+      </div>
+      {% endif %}
+      {% if diagnosis.findings %}
+      <div>
+        <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.05em;">Hallazgos</p>
+        <p style="white-space:pre-line;margin-bottom:0;">{{ diagnosis.findings }}</p>
+      </div>
+      {% endif %}
+      {% if diagnosis.tests_performed %}
+      <div>
+        <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.05em;">Pruebas realizadas</p>
+        <p style="white-space:pre-line;margin-bottom:0;">{{ diagnosis.tests_performed }}</p>
+      </div>
+      {% endif %}
+      {% if diagnosis.recommended_solution %}
+      <div>
+        <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.05em;">Solución recomendada</p>
+        <p style="white-space:pre-line;margin-bottom:0;">{{ diagnosis.recommended_solution }}</p>
+      </div>
+      {% endif %}
+      {% if diagnosis.risk_notes %}
+      <div>
+        <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.05em;">Notas de riesgo</p>
+        <p style="white-space:pre-line;margin-bottom:0;">{{ diagnosis.risk_notes }}</p>
+      </div>
+      {% endif %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div>
+          <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.05em;">¿Tiene reparación?</p>
+          <p style="margin-bottom:0;">
+            {% if diagnosis.repairable is True %}
+            <span style="color:var(--color-success);font-weight:600;">Sí</span>
+            {% elif diagnosis.repairable is False %}
+            <span style="color:var(--color-danger);font-weight:600;">No</span>
+            {% else %}
+            <span class="text-muted">Sin definir</span>
+            {% endif %}
+          </p>
+        </div>
+        {% if diagnosis.estimated_hours %}
+        <div>
+          <p style="font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.05em;">Horas estimadas</p>
+          <p style="margin-bottom:0;">{{ diagnosis.estimated_hours }} hs</p>
+        </div>
+        {% endif %}
+      </div>
+      {% if diagnosis.completed_at %}
+      <p style="font-size:.8125rem;color:var(--color-text-muted);margin-bottom:0;">
+        Finalizado el {{ diagnosis.completed_at|date:"d/m/Y H:i" }}
+        {% if diagnosis.technician %} por {{ diagnosis.technician.get_full_name|default:diagnosis.technician.username }}{% endif %}
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Formulario editable cuando es borrador -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Editar diagnóstico</h2>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div style="background:var(--color-danger-light);border-radius:var(--radius);padding:.75rem;margin-bottom:1rem;">
+          {% for error in form.non_field_errors %}
+          <p style="margin-bottom:0;color:var(--color-danger);">{{ error }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.reported_problem_summary.id_for_label }}">
+              {{ form.reported_problem_summary.label }}
+            </label>
+            {{ form.reported_problem_summary }}
+            {% if form.reported_problem_summary.errors %}
+            <p style="color:var(--color-danger);font-size:.8125rem;margin-top:.25rem;">{{ form.reported_problem_summary.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.findings.id_for_label }}">
+              {{ form.findings.label }}
+            </label>
+            {{ form.findings }}
+            {% if form.findings.errors %}
+            <p style="color:var(--color-danger);font-size:.8125rem;margin-top:.25rem;">{{ form.findings.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.tests_performed.id_for_label }}">
+              {{ form.tests_performed.label }}
+            </label>
+            {{ form.tests_performed }}
+            {% if form.tests_performed.errors %}
+            <p style="color:var(--color-danger);font-size:.8125rem;margin-top:.25rem;">{{ form.tests_performed.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.recommended_solution.id_for_label }}">
+              {{ form.recommended_solution.label }}
+            </label>
+            {{ form.recommended_solution }}
+            {% if form.recommended_solution.errors %}
+            <p style="color:var(--color-danger);font-size:.8125rem;margin-top:.25rem;">{{ form.recommended_solution.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label class="form-label" for="{{ form.risk_notes.id_for_label }}">
+            {{ form.risk_notes.label }}
+          </label>
+          {{ form.risk_notes }}
+          {% if form.risk_notes.errors %}
+          <p style="color:var(--color-danger);font-size:.8125rem;margin-top:.25rem;">{{ form.risk_notes.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="{{ form.repairable.id_for_label }}">
+              {{ form.repairable.label }}
+            </label>
+            {{ form.repairable }}
+            {% if form.repairable.errors %}
+            <p style="color:var(--color-danger);font-size:.8125rem;margin-top:.25rem;">{{ form.repairable.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="{{ form.estimated_hours.id_for_label }}">
+              {{ form.estimated_hours.label }}
+            </label>
+            {{ form.estimated_hours }}
+            {% if form.estimated_hours.errors %}
+            <p style="color:var(--color-danger);font-size:.8125rem;margin-top:.25rem;">{{ form.estimated_hours.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+          <button type="submit" name="action" value="save" class="btn btn-secondary">
+            Guardar borrador
+          </button>
+          <button type="submit" name="action" value="finalize" class="btn btn-primary"
+            onclick="return confirm('¿Finalizar el diagnóstico? Esta acción no se puede deshacer.');">
+            Finalizar diagnóstico
+          </button>
+          <a href="{% url 'workorder-detail' order.pk %}" class="btn btn-ghost btn-sm" style="align-self:center;">
+            Cancelar
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

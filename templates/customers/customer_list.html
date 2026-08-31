@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes — PC Service Manager{% endblock %}
+{% block page_title %}Clientes{% endblock %}
+{% block nav_clientes %}active{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- Encabezado -->
+  <div class="section-header" style="margin-bottom:1.25rem;">
+    <h1 style="font-size:1.5rem;font-weight:700;">Clientes</h1>
+    <div class="d-flex gap-2">
+      <a href="{% url 'customer-create' %}" class="btn btn-primary">+ Nuevo cliente</a>
+      <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-secondary btn-sm">Exportar CSV</a>
+    </div>
+  </div>
+
+  <!-- Búsqueda -->
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="card-body" style="padding:.75rem 1.25rem;">
+      <form method="get" class="d-flex gap-2 align-center">
+        <div style="flex:1;">
+          {{ search_form.q }}
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+        {% if q %}
+          <a href="{% url 'customer-list' %}" class="btn btn-secondary btn-sm">Limpiar</a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- Resultados -->
+  {% if q %}
+    <p class="text-muted" style="margin-bottom:.75rem;">
+      Resultados para "<strong>{{ q }}</strong>" — {{ paginator.count }} cliente{% if paginator.count != 1 %}s{% endif %} encontrado{% if paginator.count != 1 %}s{% endif %}.
+    </p>
+  {% endif %}
+
+  <div class="card">
+    {% if customers %}
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre / Razón social</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Alta</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for customer in customers %}
+          <tr>
+            <td>
+              <a href="{% url 'customer-detail' customer.pk %}" style="font-weight:500;">{{ customer.full_name }}</a>
+              {% if customer.business_name %}
+                <br><small class="text-muted">{{ customer.business_name }}</small>
+              {% endif %}
+            </td>
+            <td>{{ customer.phone }}</td>
+            <td>{{ customer.email|default:"—" }}</td>
+            <td>{{ customer.created_at|date:"d/m/Y" }}</td>
+            <td>
+              {% if customer.is_active %}
+                <span class="badge badge-success">Activo</span>
+              {% else %}
+                <span class="badge badge-neutral">Inactivo</span>
+              {% endif %}
+            </td>
+            <td style="text-align:right;">
+              <a href="{% url 'customer-detail' customer.pk %}" class="btn btn-secondary btn-sm">Ver</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if is_paginated %}
+    <div class="card-footer d-flex justify-between align-center">
+      <span class="text-muted text-sm">
+        Página {{ page_obj.number }} de {{ paginator.num_pages }} — {{ paginator.count }} registro{% if paginator.count != 1 %}s{% endif %}
+      </span>
+      <div class="d-flex gap-2">
+        {% if page_obj.has_previous %}
+          <a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-secondary btn-sm">‹ Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-secondary btn-sm">Siguiente ›</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="card-body" style="text-align:center;padding:3rem;">
+      {% if q %}
+        <p class="text-muted">No se encontraron clientes para "<strong>{{ q }}</strong>".</p>
+        <a href="{% url 'customer-list' %}" class="btn btn-secondary btn-sm" style="margin-top:.5rem;">Ver todos</a>
+      {% else %}
+        <p class="text-muted">Todavía no hay clientes registrados.</p>
+        <a href="{% url 'customer-create' %}" class="btn btn-primary" style="margin-top:.5rem;">Registrar primer cliente</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

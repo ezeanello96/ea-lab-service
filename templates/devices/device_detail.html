@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}{{ device }} — PC Service Manager{% endblock %}
+{% block page_title %}Detalle de equipo{% endblock %}
+{% block nav_clientes %}active{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- Breadcrumb -->
+  <nav style="margin-bottom:1rem;font-size:.875rem;color:var(--color-text-secondary);">
+    <a href="{% url 'customer-list' %}" class="link">Clientes</a>
+    &rsaquo; <a href="{% url 'customer-detail' device.customer.pk %}" class="link">{{ device.customer.full_name }}</a>
+    &rsaquo; {{ device }}
+  </nav>
+
+  <!-- Encabezado -->
+  <div class="section-header" style="margin-bottom:1.25rem;">
+    <div>
+      <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:.25rem;">{{ device }}</h1>
+      <p class="text-muted" style="margin-bottom:0;">{{ device.get_device_type_display }} — {{ device.customer.full_name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'device-update' device.pk %}" class="btn btn-secondary btn-sm">Editar</a>
+      <a href="{% url 'workorder-create' %}?customer={{ device.customer.pk }}&device={{ device.pk }}" class="btn btn-primary btn-sm">+ Nueva orden</a>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+
+    <!-- Especificaciones -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Especificaciones</h2>
+        {% if device.is_active %}
+          <span class="badge badge-success">Activo</span>
+        {% else %}
+          <span class="badge badge-neutral">Inactivo</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <dl style="display:grid;grid-template-columns:max-content 1fr;gap:.375rem 1rem;">
+          <dt class="text-muted" style="font-size:.875rem;">Tipo</dt>
+          <dd>{{ device.get_device_type_display }}</dd>
+
+          <dt class="text-muted" style="font-size:.875rem;">Marca</dt>
+          <dd>{{ device.brand|default:"—" }}</dd>
+
+          <dt class="text-muted" style="font-size:.875rem;">Modelo</dt>
+          <dd>{{ device.model|default:"—" }}</dd>
+
+          <dt class="text-muted" style="font-size:.875rem;">Número de serie</dt>
+          <dd style="font-family:monospace;">{{ device.serial_number|default:"—" }}</dd>
+
+          {% if device.alias %}
+          <dt class="text-muted" style="font-size:.875rem;">Alias</dt>
+          <dd>{{ device.alias }}</dd>
+          {% endif %}
+        </dl>
+
+        <hr style="margin:1rem 0;border:none;border-top:1px solid var(--color-border);">
+        <p style="font-size:.875rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.5rem;">Especificaciones técnicas</p>
+
+        <dl style="display:grid;grid-template-columns:max-content 1fr;gap:.375rem 1rem;">
+          <dt class="text-muted" style="font-size:.875rem;">S.O.</dt>
+          <dd>{{ device.operating_system|default:"—" }}</dd>
+
+          <dt class="text-muted" style="font-size:.875rem;">Procesador</dt>
+          <dd>{{ device.cpu|default:"—" }}</dd>
+
+          <dt class="text-muted" style="font-size:.875rem;">RAM</dt>
+          <dd>{{ device.ram_description|default:"—" }}</dd>
+
+          <dt class="text-muted" style="font-size:.875rem;">Almacenamiento</dt>
+          <dd>{{ device.storage_description|default:"—" }}</dd>
+
+          <dt class="text-muted" style="font-size:.875rem;">Tarjeta de video</dt>
+          <dd>{{ device.gpu_description|default:"—" }}</dd>
+        </dl>
+
+        {% if device.permanent_notes %}
+        <hr style="margin:1rem 0;border:none;border-top:1px solid var(--color-border);">
+        <p style="font-size:.875rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:.375rem;">Observaciones permanentes</p>
+        <p style="white-space:pre-line;margin-bottom:0;">{{ device.permanent_notes }}</p>
+        {% endif %}
+
+        <p style="margin-top:1rem;margin-bottom:0;font-size:.8125rem;color:var(--color-text-muted);">
+          Registrado el {{ device.created_at|date:"d/m/Y H:i" }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Historial de órdenes -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Historial de órdenes ({{ orders|length }})</h2>
+        <a href="{% url 'workorder-create' %}?customer={{ device.customer.pk }}&device={{ device.pk }}" class="btn btn-primary btn-sm">+ Nueva</a>
+      </div>
+      {% if orders %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Estado</th>
+              <th>Ingreso</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+            <tr>
+              <td>
+                <a href="{% url 'workorder-detail' order.pk %}" style="font-weight:600;font-family:monospace;">{{ order.number }}</a>
+                <br><small class="text-muted" style="display:block;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ order.reported_issue }}</small>
+              </td>
+              <td>
+                {% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}
+              </td>
+              <td>{{ order.received_at|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body" style="text-align:center;color:var(--color-text-muted);">
+        <p>No hay órdenes de trabajo para este equipo.</p>
+        <a href="{% url 'workorder-create' %}?customer={{ device.customer.pk }}&device={{ device.pk }}" class="btn btn-primary btn-sm" style="margin-top:.5rem;">Crear primera orden</a>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

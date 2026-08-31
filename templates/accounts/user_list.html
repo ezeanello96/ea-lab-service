@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Usuarios — PC Service Manager{% endblock %}
+{% block page_title %}Usuarios{% endblock %}
+{% block nav_usuarios %}active{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <div class="section-header" style="margin-bottom:1rem;">
+    <h2 class="section-title">Usuarios del sistema</h2>
+    <a href="{% url 'user-create' %}" class="btn btn-primary">+ Nuevo usuario</a>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-body">
+      <form method="get" style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Rol</label>
+          <select name="role" class="form-control">
+            <option value="">Todos</option>
+            <option value="staff" {% if role_filter == 'staff' %}selected{% endif %}>Administrador</option>
+            <option value="tech"  {% if role_filter == 'tech'  %}selected{% endif %}>Técnico</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Estado</label>
+          <select name="active" class="form-control">
+            <option value="">Todos</option>
+            <option value="1" {% if active_filter == '1' %}selected{% endif %}>Activos</option>
+            <option value="0" {% if active_filter == '0' %}selected{% endif %}>Inactivos</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-secondary">Filtrar</button>
+        <a href="{% url 'user-list' %}" class="btn btn-ghost">Limpiar</a>
+      </form>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="card">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Nombre completo</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Ver costos</th>
+            <th>Teléfono</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr style="{% if not u.is_active %}opacity:.55;{% endif %}">
+            <td style="font-family:monospace;font-weight:600;">{{ u.username }}</td>
+            <td>{{ u.get_full_name|default:"—" }}</td>
+            <td>{{ u.email|default:"—" }}</td>
+            <td>
+              {% if u.is_staff %}
+              <span class="badge badge-primary">Admin</span>
+              {% else %}
+              <span class="badge badge-neutral">Técnico</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.is_active %}
+              <span style="color:var(--color-success);font-weight:600;">Activo</span>
+              {% else %}
+              <span style="color:var(--color-danger);font-weight:600;">Inactivo</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.profile.can_view_costs %}Sí{% else %}No{% endif %}
+            </td>
+            <td>{{ u.profile.phone|default:"—" }}</td>
+            <td style="text-align:right;">
+              <div style="display:flex;gap:.5rem;justify-content:flex-end;">
+                <a href="{% url 'user-update' u.pk %}" class="btn btn-secondary btn-sm">Editar</a>
+                {% if u != request.user %}
+                <form method="post" action="{% url 'user-toggle-active' u.pk %}"
+                      onsubmit="return confirm('¿{% if u.is_active %}Desactivar{% else %}Activar{% endif %} al usuario {{ u.username }}?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm {% if u.is_active %}btn-danger{% else %}btn-primary{% endif %}">
+                    {% if u.is_active %}Desactivar{% else %}Activar{% endif %}
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="text-align:center;color:var(--color-text-muted);padding:2rem;">
+              No se encontraron usuarios con los filtros seleccionados.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

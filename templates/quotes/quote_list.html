@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Presupuestos — {{ order.number }} — PC Service Manager{% endblock %}
+{% block page_title %}Presupuestos{% endblock %}
+{% block nav_ordenes %}active{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- Breadcrumb -->
+  <nav style="margin-bottom:1rem;font-size:.875rem;color:var(--color-text-secondary);">
+    <a href="{% url 'workorder-list' %}" class="link">Órdenes</a>
+    &rsaquo; <a href="{% url 'workorder-detail' order.pk %}" class="link">{{ order.number }}</a>
+    &rsaquo; Presupuestos
+  </nav>
+
+  <!-- Cabecera -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;">
+      <div>
+        <h1 style="font-size:1.25rem;font-weight:700;margin-bottom:.25rem;">Presupuestos — {{ order.number }}</h1>
+        <p style="margin-bottom:0;font-size:.875rem;color:var(--color-text-secondary);">
+          {{ quotes|length }} versión{% if quotes|length != 1 %}es{% endif %}
+        </p>
+      </div>
+      <div style="display:flex;gap:.5rem;">
+        <a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Volver a la orden</a>
+        <form method="post" action="{% url 'quote-create' order.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary btn-sm">+ Nueva versión</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de presupuestos -->
+  {% if quotes %}
+  <div class="card">
+    <div class="card-body" style="padding:0;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--color-border);">
+            <th style="padding:.75rem 1rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em;">Versión</th>
+            <th style="padding:.75rem 1rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em;">Estado</th>
+            <th style="padding:.75rem 1rem;text-align:right;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em;">Total</th>
+            <th style="padding:.75rem 1rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em;">Válido hasta</th>
+            <th style="padding:.75rem 1rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em;">Creado</th>
+            <th style="padding:.75rem 1rem;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for quote in quotes %}
+          <tr style="border-bottom:1px solid var(--color-border);">
+            <td style="padding:.75rem 1rem;">
+              <span style="font-weight:700;font-family:monospace;">v{{ quote.version }}</span>
+            </td>
+            <td style="padding:.75rem 1rem;">
+              <span style="display:inline-flex;align-items:center;padding:.2rem .55rem;border-radius:9999px;font-size:.75rem;font-weight:600;
+                {% if quote.status == 'APPROVED' %}background:#dcfce7;color:#166534;
+                {% elif quote.status == 'REJECTED' %}background:#fee2e2;color:#991b1b;
+                {% elif quote.status == 'SENT' %}background:#dbeafe;color:#1e40af;
+                {% elif quote.status == 'DRAFT' %}background:#fef9c3;color:#854d0e;
+                {% elif quote.status == 'EXPIRED' %}background:#f3f4f6;color:#6b7280;
+                {% else %}background:#f3f4f6;color:#6b7280;{% endif %}">
+                {{ quote.get_status_display }}
+              </span>
+            </td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;">
+              {{ quote.currency_code }} {{ quote.total|floatformat:2 }}
+            </td>
+            <td style="padding:.75rem 1rem;font-size:.875rem;color:var(--color-text-secondary);">
+              {% if quote.valid_until %}{{ quote.valid_until|date:"d/m/Y" }}{% else %}—{% endif %}
+            </td>
+            <td style="padding:.75rem 1rem;font-size:.875rem;color:var(--color-text-secondary);">
+              {{ quote.created_at|date:"d/m/Y H:i" }}
+            </td>
+            <td style="padding:.75rem 1rem;text-align:right;">
+              <a href="{% url 'quote-detail' order.pk quote.pk %}" class="btn btn-secondary btn-sm">Ver</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="card-body" style="text-align:center;padding:2.5rem;">
+      <p style="color:var(--color-text-muted);margin-bottom:1rem;">Esta orden no tiene presupuestos aún.</p>
+      <form method="post" action="{% url 'quote-create' order.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Crear primer presupuesto</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

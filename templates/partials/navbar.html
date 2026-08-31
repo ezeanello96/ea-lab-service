@@ -1,0 +1,20 @@
+<!-- Navbar parcial incluido desde base.html -->
+<header class="navbar" role="banner">
+  <button class="navbar-toggle" id="sidebarToggle" aria-label="Abrir menú" title="Menú">
+    <span class="hamburger"></span>
+    <span class="hamburger"></span>
+    <span class="hamburger"></span>
+  </button>
+  <div class="navbar-brand">
+    <span>{% block navbar_title %}PC Service Manager{% endblock %}</span>
+  </div>
+  <div class="navbar-actions">
+    {% if request.user.is_authenticated %}
+      <span class="navbar-user">{{ request.user.get_full_name|default:request.user.username }}</span>
+      <form method="post" action="{% url 'logout' %}" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-ghost">Salir</button>
+      </form>
+    {% endif %}
+  </div>
+</header>

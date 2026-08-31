@@ -1,0 +1,9 @@
+{% comment %}
+Partial: badge de prioridad para órdenes de trabajo.
+Variables: priority (str), label (str)
+{% endcomment %}
+{% if priority == "LOW" %}<span class="badge badge-neutral">{{ label }}</span>
+{% elif priority == "NORMAL" %}<span class="badge badge-info">{{ label }}</span>
+{% elif priority == "HIGH" %}<span class="badge badge-warning">{{ label }}</span>
+{% elif priority == "URGENT" %}<span class="badge badge-danger">{{ label }}</span>
+{% else %}<span class="badge badge-neutral">{{ label }}</span>{% endif %}

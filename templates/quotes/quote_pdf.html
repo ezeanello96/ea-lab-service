@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8">
+  <title>Presupuesto {{ order.number }} v{{ quote.version }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 18mm 22mm 18mm;
+      @bottom-center {
+        content: "Página " counter(page) " de " counter(pages);
+        font-size: 9pt;
+        color: #6b7280;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10pt;
+      color: #111827;
+      line-height: 1.45;
+    }
+
+    /* ---- Encabezado del documento ---- */
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18pt;
+      padding-bottom: 12pt;
+      border-bottom: 2pt solid #111827;
+    }
+
+    .business-info { flex: 1; }
+    .business-name { font-size: 16pt; font-weight: bold; margin-bottom: 4pt; }
+    .business-meta { font-size: 9pt; color: #4b5563; line-height: 1.6; }
+
+    .doc-title-block { text-align: right; }
+    .doc-title { font-size: 18pt; font-weight: bold; color: #111827; margin-bottom: 4pt; }
+    .doc-subtitle { font-size: 10pt; color: #6b7280; }
+
+    /* ---- Sección info de la orden y cliente ---- */
+    .info-grid {
+      display: table;
+      width: 100%;
+      margin-bottom: 16pt;
+    }
+    .info-col {
+      display: table-cell;
+      width: 50%;
+      vertical-align: top;
+      padding-right: 16pt;
+    }
+    .info-col:last-child { padding-right: 0; padding-left: 16pt; }
+
+    .section-label {
+      font-size: 8pt;
+      font-weight: bold;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 5pt;
+      border-bottom: 1pt solid #e5e7eb;
+      padding-bottom: 3pt;
+    }
+
+    .info-row { display: table; width: 100%; margin-bottom: 2pt; }
+    .info-key { display: table-cell; width: 38%; font-weight: bold; font-size: 9.5pt; color: #374151; }
+    .info-val { display: table-cell; font-size: 9.5pt; color: #111827; }
+
+    /* ---- Tabla de ítems ---- */
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14pt;
+    }
+
+    .items-table thead tr {
+      background: #111827;
+      color: #fff;
+    }
+
+    .items-table thead th {
+      padding: 6pt 8pt;
+      text-align: left;
+      font-size: 9pt;
+      font-weight: bold;
+      letter-spacing: 0.03em;
+    }
+
+    .items-table thead th.right { text-align: right; }
+
+    .items-table tbody tr { border-bottom: 1pt solid #e5e7eb; }
+    .items-table tbody tr:nth-child(even) { background: #f9fafb; }
+
+    .items-table tbody td {
+      padding: 5pt 8pt;
+      font-size: 9.5pt;
+      vertical-align: top;
+    }
+
+    .items-table tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
+    .items-table tbody td.type { color: #6b7280; font-size: 9pt; }
+
+    /* ---- Totales ---- */
+    .totals-block {
+      margin-left: auto;
+      width: 260pt;
+      margin-bottom: 16pt;
+    }
+
+    .totals-row {
+      display: table;
+      width: 100%;
+      padding: 3pt 0;
+    }
+
+    .totals-label { display: table-cell; font-size: 10pt; color: #374151; }
+    .totals-value {
+      display: table-cell;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-size: 10pt;
+    }
+
+    .totals-discount .totals-label,
+    .totals-discount .totals-value { color: #166534; }
+
+    .totals-final {
+      border-top: 2pt solid #111827;
+      margin-top: 4pt;
+      padding-top: 6pt;
+    }
+
+    .totals-final .totals-label,
+    .totals-final .totals-value {
+      font-size: 13pt;
+      font-weight: bold;
+    }
+
+    /* ---- Condiciones ---- */
+    .terms-block {
+      border: 1pt solid #e5e7eb;
+      border-radius: 4pt;
+      padding: 10pt;
+      margin-bottom: 14pt;
+      background: #f9fafb;
+    }
+
+    .terms-title {
+      font-size: 9pt;
+      font-weight: bold;
+      color: #374151;
+      margin-bottom: 5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .terms-text { font-size: 9pt; color: #4b5563; white-space: pre-wrap; }
+
+    /* ---- Pie del documento ---- */
+    .doc-footer {
+      border-top: 1pt solid #e5e7eb;
+      padding-top: 8pt;
+      margin-top: 16pt;
+      font-size: 8.5pt;
+      color: #6b7280;
+      text-align: center;
+    }
+
+    /* ---- Utilidades ---- */
+    .mb-8  { margin-bottom: 8pt; }
+    .mb-12 { margin-bottom: 12pt; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== ENCABEZADO ===== -->
+  <div class="doc-header">
+    <div class="business-info">
+      {% if business %}
+      <div class="business-name">{{ business.business_name }}</div>
+      <div class="business-meta">
+        {% if business.legal_name %}<div>{{ business.legal_name }}</div>{% endif %}
+        {% if business.address %}<div>{{ business.address }}</div>{% endif %}
+        {% if business.phone %}<div>Tel: {{ business.phone }}</div>{% endif %}
+        {% if business.email %}<div>{{ business.email }}</div>{% endif %}
+      </div>
+      {% else %}
+      <div class="business-name">Servicio Técnico</div>
+      {% endif %}
+    </div>
+    <div class="doc-title-block">
+      <div class="doc-title">PRESUPUESTO</div>
+      <div class="doc-subtitle">{{ order.number }} — v{{ quote.version }}</div>
+      <div class="doc-subtitle" style="margin-top:3pt;">
+        {% now "d/m/Y" %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DATOS CLIENTE Y ORDEN ===== -->
+  <div class="info-grid mb-12">
+    <div class="info-col">
+      <div class="section-label">Cliente</div>
+      <div class="info-row">
+        <span class="info-key">Nombre</span>
+        <span class="info-val">{{ order.customer.full_name }}</span>
+      </div>
+      {% if order.customer.email %}
+      <div class="info-row">
+        <span class="info-key">Email</span>
+        <span class="info-val">{{ order.customer.email }}</span>
+      </div>
+      {% endif %}
+      {% if order.customer.phone %}
+      <div class="info-row">
+        <span class="info-key">Teléfono</span>
+        <span class="info-val">{{ order.customer.phone }}</span>
+      </div>
+      {% endif %}
+    </div>
+    <div class="info-col">
+      <div class="section-label">Equipo</div>
+      <div class="info-row">
+        <span class="info-key">Descripción</span>
+        <span class="info-val">{{ order.device }}</span>
+      </div>
+      {% if order.device.serial_number %}
+      <div class="info-row">
+        <span class="info-key">Nro. serie</span>
+        <span class="info-val">{{ order.device.serial_number }}</span>
+      </div>
+      {% endif %}
+      <div class="info-row">
+        <span class="info-key">Ingreso</span>
+        <span class="info-val">{{ order.received_at|date:"d/m/Y" }}</span>
+      </div>
+      {% if order.reported_issue %}
+      <div class="info-row">
+        <span class="info-key">Problema</span>
+        <span class="info-val">{{ order.reported_issue|truncatewords:20 }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ===== TABLA DE ÍTEMS ===== -->
+  <table class="items-table mb-8">
+    <thead>
+      <tr>
+        <th>Tipo</th>
+        <th>Descripción</th>
+        <th class="right">Cant.</th>
+        <th class="right">Precio unit.</th>
+        <th class="right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="type">{{ item.get_item_type_display }}</td>
+        <td>{{ item.description }}</td>
+        <td class="right">{{ item.quantity }}</td>
+        <td class="right">{{ quote.currency_code }} {{ item.unit_price|floatformat:2 }}</td>
+        <td class="right">{{ quote.currency_code }} {{ item.line_total|floatformat:2 }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" style="text-align:center;color:#6b7280;padding:10pt;">Sin ítems registrados.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- ===== TOTALES ===== -->
+  <div class="totals-block">
+    <div class="totals-row">
+      <span class="totals-label">Subtotal</span>
+      <span class="totals-value">{{ quote.currency_code }} {{ quote.subtotal|floatformat:2 }}</span>
+    </div>
+    {% if quote.discount_amount %}
+    <div class="totals-row totals-discount">
+      <span class="totals-label">Descuento</span>
+      <span class="totals-value">– {{ quote.currency_code }} {{ quote.discount_amount|floatformat:2 }}</span>
+    </div>
+    {% endif %}
+    {% if quote.tax_rate %}
+    <div class="totals-row">
+      <span class="totals-label">IVA ({{ quote.tax_rate }}%)</span>
+      <span class="totals-value">{{ quote.currency_code }} {{ quote.tax_amount|floatformat:2 }}</span>
+    </div>
+    {% endif %}
+    <div class="totals-row totals-final">
+      <span class="totals-label">TOTAL</span>
+      <span class="totals-value">{{ quote.currency_code }} {{ quote.total|floatformat:2 }}</span>
+    </div>
+  </div>
+
+  <!-- ===== CONDICIONES ===== -->
+  {% if quote.terms %}
+  <div class="terms-block">
+    <div class="terms-title">Condiciones del presupuesto</div>
+    <div class="terms-text">{{ quote.terms }}</div>
+  </div>
+  {% elif business and business.quote_terms %}
+  <div class="terms-block">
+    <div class="terms-title">Condiciones del presupuesto</div>
+    <div class="terms-text">{{ business.quote_terms }}</div>
+  </div>
+  {% endif %}
+
+  <!-- ===== PIE ===== -->
+  <div class="doc-footer">
+    {% if quote.valid_until %}
+    <p>Válido hasta el {{ quote.valid_until|date:"d/m/Y" }} &mdash;</p>
+    {% endif %}
+    <p>Generado el {% now "d/m/Y \a \l\a\s H:i" %}</p>
+  </div>
+
+</body>
+</html>
