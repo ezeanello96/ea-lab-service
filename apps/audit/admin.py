@@ -6,11 +6,11 @@ from .models import AuditLog
 
 @admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):
-    list_display = ("timestamp", "user", "action", "object_repr", "ip_address")
+    list_display = ("timestamp", "actor", "action", "object_repr", "ip_address")
     list_filter = ("action",)
-    search_fields = ("user__username", "object_repr", "ip_address")
+    search_fields = ("actor__username", "object_repr", "ip_address")
     readonly_fields = (
-        "user",
+        "actor",
         "action",
         "content_type",
         "object_id",
