@@ -58,9 +58,9 @@
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
           <div class="form-group">
-            <label class="form-label" for="{{ form.device_type.id_for_label }}">{{ form.device_type.label }}</label>
-            {{ form.device_type }}
-            {% if form.device_type.errors %}<p class="form-error">{{ form.device_type.errors|join:", " }}</p>{% endif %}
+            <label class="form-label" for="{{ form.device_category.id_for_label }}">{{ form.device_category.label }}</label>
+            {{ form.device_category }}
+            {% if form.device_category.errors %}<p class="form-error">{{ form.device_category.errors|join:", " }}</p>{% endif %}
           </div>
           <div class="form-group">
             <label class="form-label" for="{{ form.alias.id_for_label }}">{{ form.alias.label }}</label>

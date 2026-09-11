@@ -106,7 +106,7 @@
                   {{ device }}
                 </a>
                 <br>
-                <small class="text-muted">{{ device.get_device_type_display }}</small>
+                <small class="text-muted">{{ device.device_category.name|default:"—" }}</small>
               </td>
               <td>{{ device.serial_number|default:"—" }}</td>
               <td>

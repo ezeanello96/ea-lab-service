@@ -18,7 +18,7 @@
   <div class="section-header" style="margin-bottom:1.25rem;">
     <div>
       <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:.25rem;">{{ device }}</h1>
-      <p class="text-muted" style="margin-bottom:0;">{{ device.get_device_type_display }} — {{ device.customer.full_name }}</p>
+      <p class="text-muted" style="margin-bottom:0;">{{ device.device_category.name|default:"—" }} — {{ device.customer.full_name }}</p>
     </div>
     <div class="d-flex gap-2">
       <a href="{% url 'device-update' device.pk %}" class="btn btn-secondary btn-sm">Editar</a>
@@ -41,7 +41,7 @@
       <div class="card-body">
         <dl style="display:grid;grid-template-columns:max-content 1fr;gap:.375rem 1rem;">
           <dt class="text-muted" style="font-size:.875rem;">Tipo</dt>
-          <dd>{{ device.get_device_type_display }}</dd>
+          <dd>{{ device.device_category.name|default:"—" }}</dd>
 
           <dt class="text-muted" style="font-size:.875rem;">Marca</dt>
           <dd>{{ device.brand|default:"—" }}</dd>

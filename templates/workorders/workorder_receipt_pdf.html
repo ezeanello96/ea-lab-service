@@ -203,7 +203,7 @@
       <div class="section-label">Datos del equipo</div>
       <div class="info-row">
         <span class="info-key">Tipo</span>
-        <span class="info-val">{{ order.device.get_device_type_display }}</span>
+        <span class="info-val">{{ order.device.device_category.name|default:"—" }}</span>
       </div>
       <div class="info-row">
         <span class="info-key">Marca</span>

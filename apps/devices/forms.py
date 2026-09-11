@@ -10,7 +10,7 @@ class DeviceForm(forms.ModelForm):
     class Meta:
         model = Device
         fields = [
-            "device_type",
+            "device_category",
             "brand",
             "model",
             "serial_number",
@@ -23,7 +23,7 @@ class DeviceForm(forms.ModelForm):
             "permanent_notes",
         ]
         widgets = {
-            "device_type": forms.Select(attrs={"class": "form-control"}),
+            "device_category": forms.Select(attrs={"class": "form-control"}),
             "brand": forms.TextInput(attrs={"class": "form-control"}),
             "model": forms.TextInput(attrs={"class": "form-control"}),
             "serial_number": forms.TextInput(attrs={"class": "form-control"}),
@@ -36,7 +36,7 @@ class DeviceForm(forms.ModelForm):
             "permanent_notes": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
         }
         labels = {
-            "device_type": "Tipo de equipo",
+            "device_category": "Tipo de equipo",
             "brand": "Marca",
             "model": "Modelo",
             "serial_number": "Número de serie",
@@ -48,3 +48,10 @@ class DeviceForm(forms.ModelForm):
             "gpu_description": "Tarjeta de video",
             "permanent_notes": "Observaciones permanentes",
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import DeviceCategory
+        self.fields["device_category"].queryset = DeviceCategory.objects.filter(is_active=True)
+        self.fields["device_category"].empty_label = "Seleccionar tipo..."
+        self.fields["device_category"].required = False

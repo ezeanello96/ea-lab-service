@@ -7,18 +7,21 @@ from django.db import models
 from apps.customers.models import Customer
 
 
+class DeviceCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True, verbose_name="Nombre")
+    is_active = models.BooleanField(default=True, verbose_name="Activa")
+
+    class Meta:
+        verbose_name = "Categoría de equipo"
+        verbose_name_plural = "Categorías de equipo"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
 class Device(models.Model):
     """Equipo o dispositivo de un cliente."""
-
-    class DeviceType(models.TextChoices):
-        DESKTOP = "DESKTOP", "PC de escritorio"
-        NOTEBOOK = "NOTEBOOK", "Notebook / Laptop"
-        ALL_IN_ONE = "ALL_IN_ONE", "All-in-One"
-        SERVER = "SERVER", "Servidor"
-        PRINTER = "PRINTER", "Impresora"
-        MONITOR = "MONITOR", "Monitor"
-        CONSOLE = "CONSOLE", "Consola"
-        OTHER = "OTHER", "Otro"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey(
@@ -27,11 +30,12 @@ class Device(models.Model):
         related_name="devices",
         verbose_name="Cliente",
     )
-    device_type = models.CharField(
-        max_length=20,
-        choices=DeviceType.choices,
-        default=DeviceType.DESKTOP,
+    device_category = models.ForeignKey(
+        DeviceCategory,
+        on_delete=models.PROTECT,
         verbose_name="Tipo de equipo",
+        null=True,
+        blank=True,
     )
     brand = models.CharField(max_length=100, blank=True, verbose_name="Marca")
     model = models.CharField(max_length=100, blank=True, verbose_name="Modelo")
@@ -79,7 +83,7 @@ class Device(models.Model):
 
     def __str__(self):
         parts = [p for p in [self.brand, self.model] if p]
-        label = " ".join(parts) if parts else self.get_device_type_display()
+        label = " ".join(parts) if parts else (self.device_category.name if self.device_category else "Equipo")
         if self.alias:
             label = f"{label} ({self.alias})"
         return label

@@ -20,7 +20,7 @@ class DeviceService:
         *,
         actor: User,
         customer: Customer,
-        device_type: str,
+        device_category=None,
         brand: str = "",
         model: str = "",
         serial_number: str = "",
@@ -34,7 +34,7 @@ class DeviceService:
     ) -> Device:
         device = Device(
             customer=customer,
-            device_type=device_type,
+            device_category=device_category,
             brand=brand,
             model=model,
             serial_number=serial_number,

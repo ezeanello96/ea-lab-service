@@ -158,6 +158,11 @@ class WorkOrder(models.Model):
     reported_issue = models.TextField(verbose_name="Problema informado")
     intake_condition = models.TextField(blank=True, verbose_name="Condición de ingreso")
     received_accessories = models.TextField(blank=True, verbose_name="Accesorios recibidos")
+    returned_accessories = models.TextField(
+        blank=True,
+        verbose_name="Accesorios devueltos",
+        help_text="Accesorios entregados al cliente al momento de la devolución del equipo.",
+    )
     internal_notes = models.TextField(blank=True, verbose_name="Notas internas")
     customer_visible_notes = models.TextField(
         blank=True, verbose_name="Notas visibles al cliente"

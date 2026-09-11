@@ -23,9 +23,7 @@
         <div>
           <select name="tipo" class="form-control" style="height:36px;font-size:.875rem;">
             <option value="">Todos los tipos</option>
-            {% for value, label in device_types %}
-            <option value="{{ value }}" {% if tipo == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
+            {% for cat in device_categories %}<option value="{{ cat.name }}" {% if tipo == cat.name %}selected{% endif %}>{{ cat.name }}</option>{% endfor %}
           </select>
         </div>
         <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
@@ -66,14 +64,14 @@
                 {% if device.brand or device.model %}
                   {{ device.brand }} {{ device.model }}
                 {% else %}
-                  {{ device.get_device_type_display }}
+                  {{ device.device_category.name|default:"Equipo" }}
                 {% endif %}
               </a>
               {% if device.alias %}
               <br><small class="text-muted">{{ device.alias }}</small>
               {% endif %}
             </td>
-            <td style="font-size:.875rem;">{{ device.get_device_type_display }}</td>
+            <td style="font-size:.875rem;">{{ device.device_category.name|default:"—" }}</td>
             <td>
               <a href="{% url 'customer-detail' device.customer.pk %}" class="link">
                 {{ device.customer.full_name }}

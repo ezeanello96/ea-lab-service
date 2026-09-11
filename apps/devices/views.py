@@ -39,14 +39,15 @@ class DeviceListView(LoginRequiredMixin, ListView):
             )
         device_type = self.request.GET.get("tipo", "")
         if device_type:
-            qs = qs.filter(device_type=device_type)
+            qs = qs.filter(device_category__name=device_type)
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["q"] = self.request.GET.get("q", "")
         context["tipo"] = self.request.GET.get("tipo", "")
-        context["device_types"] = Device.DeviceType.choices
+        from .models import DeviceCategory
+        context["device_categories"] = DeviceCategory.objects.filter(is_active=True)
         return context
 
 

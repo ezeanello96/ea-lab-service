@@ -19,6 +19,7 @@ class WorkOrderCreateForm(forms.ModelForm):
             "assigned_to",
             "intake_condition",
             "received_accessories",
+            "returned_accessories",
             "internal_notes",
             "diagnosis_due_at",
             "promised_delivery_at",
@@ -32,6 +33,7 @@ class WorkOrderCreateForm(forms.ModelForm):
             "assigned_to": forms.Select(attrs={"class": "form-control"}),
             "intake_condition": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
             "received_accessories": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+            "returned_accessories": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
             "internal_notes": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
             "diagnosis_due_at": forms.DateTimeInput(
                 attrs={"type": "datetime-local", "class": "form-control"}
@@ -49,6 +51,7 @@ class WorkOrderCreateForm(forms.ModelForm):
             "assigned_to": "Asignado a",
             "intake_condition": "Condición de ingreso",
             "received_accessories": "Accesorios recibidos",
+            "returned_accessories": "Accesorios devueltos",
             "internal_notes": "Notas internas",
             "diagnosis_due_at": "Límite de diagnóstico",
             "promised_delivery_at": "Entrega prometida",

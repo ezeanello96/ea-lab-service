@@ -702,6 +702,35 @@ tbody tr:hover { background: var(--color-bg); }
   .stat-card__value { font-size: 1.375rem; }
 
   .login-card { padding: 2rem 1.25rem; }
+
+  /* Tablas responsive */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cards que colapsan en mobile */
+  .detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Ocultar columnas secundarias en mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* Section header en mobile */
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .75rem;
+  }
+
+  /* Botones de acción en mobile */
+  .section-header .d-flex {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 480px) {
@@ -710,5 +739,10 @@ tbody tr:hover { background: var(--color-bg); }
   .construction-banner {
     flex-direction: column;
     text-align: center;
+  }
+
+  .btn {
+    font-size: .8125rem;
+    padding: .35rem .75rem;
   }
 }
