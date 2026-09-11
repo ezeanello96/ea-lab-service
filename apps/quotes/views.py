@@ -66,15 +66,22 @@ class QuoteDetailView(LoginRequiredMixin, View):
         formset = QuoteItemFormSet(request.POST, instance=quote)
         if formset.is_valid():
             items = formset.save(commit=False)
-            for item in items:
-                item.line_total = item.compute_line_total()
-                item.save()
             for obj in formset.deleted_objects:
                 obj.delete()
+            for position, item in enumerate(items, start=1):
+                item.position = position
+                item.line_total = item.compute_line_total()
+                item.save()
+            # Reorder persisted items that weren't changed
+            for position, item in enumerate(quote.items.order_by("position"), start=1):
+                if item.position != position:
+                    item.position = position
+                    item.save(update_fields=["position"])
             QuoteService.recalculate(quote=quote)
             messages.success(request, "Presupuesto actualizado.")
             return redirect("quote-detail", order_pk=order.pk, pk=quote.pk)
 
+        messages.error(request, "No se pudieron guardar los ítems. Revisá los campos marcados.")
         return render(request, self.template_name, {
             "order": order,
             "quote": quote,

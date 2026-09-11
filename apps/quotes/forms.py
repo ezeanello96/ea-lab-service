@@ -10,17 +10,15 @@ class QuoteItemForm(forms.ModelForm):
 
     class Meta:
         model = QuoteItem
-        fields = ["position", "item_type", "description", "quantity", "unit_price", "internal_unit_cost"]
+        fields = ["item_type", "description", "quantity", "unit_price", "internal_unit_cost"]
         widgets = {
-            "position": forms.NumberInput(attrs={"class": "form-control", "min": "1"}),
             "item_type": forms.Select(attrs={"class": "form-control"}),
             "description": forms.TextInput(attrs={"class": "form-control"}),
-            "quantity": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": "0"}),
+            "quantity": forms.NumberInput(attrs={"class": "form-control", "step": "1", "min": "1"}),
             "unit_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": "0"}),
             "internal_unit_cost": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": "0"}),
         }
         labels = {
-            "position": "Pos.",
             "item_type": "Tipo",
             "description": "Descripción",
             "quantity": "Cant.",

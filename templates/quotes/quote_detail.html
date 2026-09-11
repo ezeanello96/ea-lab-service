@@ -74,11 +74,15 @@
           <form method="post">
             {% csrf_token %}
             {{ formset.management_form }}
+            {% if formset.non_form_errors %}
+            <div style="padding:.75rem 1rem;background:#fee2e2;color:#991b1b;font-size:.875rem;">
+              {% for error in formset.non_form_errors %}{{ error }}{% endfor %}
+            </div>
+            {% endif %}
             <div style="overflow-x:auto;">
-              <table style="width:100%;border-collapse:collapse;min-width:650px;">
+              <table style="width:100%;border-collapse:collapse;min-width:580px;">
                 <thead>
                   <tr style="border-bottom:2px solid var(--color-border);background:var(--color-surface-raised);">
-                    <th style="padding:.5rem .75rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);width:60px;">Pos.</th>
                     <th style="padding:.5rem .75rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);width:110px;">Tipo</th>
                     <th style="padding:.5rem .75rem;text-align:left;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);">Descripción</th>
                     <th style="padding:.5rem .75rem;text-align:right;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);width:80px;">Cant.</th>
@@ -86,20 +90,29 @@
                     {% if can_view_costs %}
                     <th style="padding:.5rem .75rem;text-align:right;font-size:.8125rem;font-weight:600;color:var(--color-text-secondary);width:120px;">Costo interno</th>
                     {% endif %}
-                    <th style="padding:.5rem .75rem;width:60px;"></th>
+                    <th style="padding:.5rem .75rem;width:40px;"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {% for item_form in formset %}
-                  <tr class="item-row" style="border-bottom:1px solid var(--color-border);">
+                  <tr class="item-row" style="border-bottom:1px solid var(--color-border);{% if item_form.errors %}background:#fff7ed;{% endif %}">
                     <td style="padding:.5rem .75rem;">
                       {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
-                      {{ item_form.position }}
+                      {{ item_form.item_type }}
+                      {% if item_form.item_type.errors %}<div style="color:#dc2626;font-size:.75rem;">{{ item_form.item_type.errors.0 }}</div>{% endif %}
                     </td>
-                    <td style="padding:.5rem .75rem;">{{ item_form.item_type }}</td>
-                    <td style="padding:.5rem .75rem;">{{ item_form.description }}</td>
-                    <td style="padding:.5rem .75rem;">{{ item_form.quantity }}</td>
-                    <td style="padding:.5rem .75rem;">{{ item_form.unit_price }}</td>
+                    <td style="padding:.5rem .75rem;">
+                      {{ item_form.description }}
+                      {% if item_form.description.errors %}<div style="color:#dc2626;font-size:.75rem;">{{ item_form.description.errors.0 }}</div>{% endif %}
+                    </td>
+                    <td style="padding:.5rem .75rem;">
+                      {{ item_form.quantity }}
+                      {% if item_form.quantity.errors %}<div style="color:#dc2626;font-size:.75rem;">{{ item_form.quantity.errors.0 }}</div>{% endif %}
+                    </td>
+                    <td style="padding:.5rem .75rem;">
+                      {{ item_form.unit_price }}
+                      {% if item_form.unit_price.errors %}<div style="color:#dc2626;font-size:.75rem;">{{ item_form.unit_price.errors.0 }}</div>{% endif %}
+                    </td>
                     {% if can_view_costs %}
                     <td style="padding:.5rem .75rem;">{{ item_form.internal_unit_cost }}</td>
                     {% endif %}
