@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Equipos — PC Service Manager{% endblock %}
+{% block page_title %}Equipos{% endblock %}
+{% block nav_equipos %}active{% endblock %}
+
+{% block content %}
+<div class="page-content">
+
+  <!-- Encabezado -->
+  <div class="section-header" style="margin-bottom:1.25rem;">
+    <h1 style="font-size:1.5rem;font-weight:700;">Equipos</h1>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-body" style="padding:.75rem 1rem;">
+      <form method="get" class="d-flex gap-2" style="flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:1;min-width:200px;">
+          <input type="search" name="q" value="{{ q }}" placeholder="Buscar por marca, modelo, cliente..."
+                 class="form-control" style="height:36px;font-size:.875rem;">
+        </div>
+        <div>
+          <select name="tipo" class="form-control" style="height:36px;font-size:.875rem;">
+            <option value="">Todos los tipos</option>
+            {% for value, label in device_types %}
+            <option value="{{ value }}" {% if tipo == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        {% if q or tipo %}
+        <a href="{% url 'device-list' %}" class="btn btn-ghost btn-sm">Limpiar</a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card">
+    <div class="card-header">
+      <span style="font-size:.875rem;color:var(--color-text-secondary);">
+        {{ page_obj.paginator.count }} equipo{% if page_obj.paginator.count != 1 %}s{% endif %}
+        {% if q or tipo %}encontrados{% endif %}
+      </span>
+    </div>
+
+    {% if devices %}
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Equipo</th>
+            <th>Tipo</th>
+            <th>Cliente</th>
+            <th>N.º de serie</th>
+            <th>Estado</th>
+            <th>Registrado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for device in devices %}
+          <tr>
+            <td>
+              <a href="{% url 'device-detail' device.pk %}" style="font-weight:600;">
+                {% if device.brand or device.model %}
+                  {{ device.brand }} {{ device.model }}
+                {% else %}
+                  {{ device.get_device_type_display }}
+                {% endif %}
+              </a>
+              {% if device.alias %}
+              <br><small class="text-muted">{{ device.alias }}</small>
+              {% endif %}
+            </td>
+            <td style="font-size:.875rem;">{{ device.get_device_type_display }}</td>
+            <td>
+              <a href="{% url 'customer-detail' device.customer.pk %}" class="link">
+                {{ device.customer.full_name }}
+              </a>
+            </td>
+            <td style="font-family:monospace;font-size:.875rem;">{{ device.serial_number|default:"—" }}</td>
+            <td>
+              {% if device.is_active %}
+                <span class="badge badge-success">Activo</span>
+              {% else %}
+                <span class="badge badge-neutral">Inactivo</span>
+              {% endif %}
+            </td>
+            <td style="font-size:.875rem;white-space:nowrap;">{{ device.created_at|date:"d/m/Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-body" style="border-top:1px solid var(--color-border);display:flex;gap:.5rem;justify-content:center;">
+      {% if page_obj.has_previous %}
+      <a href="?{% if q %}q={{ q }}&{% endif %}{% if tipo %}tipo={{ tipo }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-ghost btn-sm">← Anterior</a>
+      {% endif %}
+      <span style="align-self:center;font-size:.875rem;color:var(--color-text-secondary);">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </span>
+      {% if page_obj.has_next %}
+      <a href="?{% if q %}q={{ q }}&{% endif %}{% if tipo %}tipo={{ tipo }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-ghost btn-sm">Siguiente →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="card-body" style="text-align:center;padding:3rem;color:var(--color-text-muted);">
+      {% if q or tipo %}
+      <p>No se encontraron equipos con esos criterios.</p>
+      <a href="{% url 'device-list' %}" class="btn btn-ghost btn-sm">Ver todos</a>
+      {% else %}
+      <p>No hay equipos registrados aún.</p>
+      <p style="font-size:.875rem;">Los equipos se crean desde la ficha de cada cliente.</p>
+      <a href="{% url 'customer-list' %}" class="btn btn-primary btn-sm" style="margin-top:.5rem;">Ir a Clientes</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

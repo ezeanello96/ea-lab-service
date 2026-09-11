@@ -3,10 +3,11 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import View
-from django.views.generic import DetailView
+from django.views.generic import DetailView, ListView
 
 from apps.customers.models import Customer
 
@@ -15,6 +16,38 @@ from .models import Device
 from .services import DeviceService
 
 logger = logging.getLogger(__name__)
+
+
+class DeviceListView(LoginRequiredMixin, ListView):
+    """Lista global de equipos ordenados por fecha de registro descendente."""
+
+    model = Device
+    template_name = "devices/device_list.html"
+    context_object_name = "devices"
+    paginate_by = 50
+
+    def get_queryset(self):
+        qs = Device.objects.select_related("customer").order_by("-created_at")
+        q = self.request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(
+                Q(brand__icontains=q)
+                | Q(model__icontains=q)
+                | Q(alias__icontains=q)
+                | Q(serial_number__icontains=q)
+                | Q(customer__full_name__icontains=q)
+            )
+        device_type = self.request.GET.get("tipo", "")
+        if device_type:
+            qs = qs.filter(device_type=device_type)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["q"] = self.request.GET.get("q", "")
+        context["tipo"] = self.request.GET.get("tipo", "")
+        context["device_types"] = Device.DeviceType.choices
+        return context
 
 
 class DeviceCreateView(LoginRequiredMixin, View):
