@@ -73,7 +73,7 @@
             <dd><a href="{% url 'device-detail' order.device.pk %}" class="link">{{ order.device }}</a></dd>
 
             <dt class="text-muted">Técnico</dt>
-            <dd>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"Sin asignar" }}</dd>
+            <dd>{% if order.assigned_to %}{{ order.assigned_to.get_full_name|default:order.assigned_to.username }}{% else %}Sin asignar{% endif %}</dd>
 
             <dt class="text-muted">Ingreso</dt>
             <dd>{{ order.received_at|date:"d/m/Y H:i" }}</dd>

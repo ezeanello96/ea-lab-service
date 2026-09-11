@@ -113,7 +113,7 @@
             <td>{% include "workorders/_priority_badge.html" with priority=order.priority label=order.get_priority_display %}</td>
             <td><a href="{% url 'customer-detail' order.customer.pk %}" class="link">{{ order.customer.full_name }}</a></td>
             <td>{{ order.device }}</td>
-            <td>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"—" }}</td>
+            <td>{% if order.assigned_to %}{{ order.assigned_to.get_full_name|default:order.assigned_to.username }}{% else %}—{% endif %}</td>
             <td>{{ order.received_at|date:"d/m/Y" }}</td>
             <td>{{ order.promised_delivery_at|date:"d/m/Y"|default:"—" }}</td>
             <td>{{ order.delivered_at|date:"d/m/Y"|default:"—" }}</td>

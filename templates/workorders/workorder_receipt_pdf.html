@@ -273,7 +273,7 @@
       <div class="section-label">Técnico asignado</div>
       <div class="info-row">
         <span class="info-key">Técnico</span>
-        <span class="info-val">{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"A definir" }}</span>
+        <span class="info-val">{% if order.assigned_to %}{{ order.assigned_to.get_full_name|default:order.assigned_to.username }}{% else %}A definir{% endif %}</span>
       </div>
       <div class="info-row">
         <span class="info-key">Recibió</span>

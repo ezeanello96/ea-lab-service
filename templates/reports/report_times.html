@@ -161,7 +161,7 @@
             <td>{{ order.customer.full_name }}</td>
             <td>{{ order.device }}</td>
             <td style="color:var(--color-danger);font-weight:600;">{{ order.promised_delivery_at|date:"d/m/Y H:i" }}</td>
-            <td>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"Sin asignar" }}</td>
+            <td>{% if order.assigned_to %}{{ order.assigned_to.get_full_name|default:order.assigned_to.username }}{% else %}Sin asignar{% endif %}</td>
             <td style="text-align:right;"><a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
           </tr>
           {% endfor %}

@@ -117,6 +117,7 @@ class WorkOrderCreateView(LoginRequiredMixin, View):
         form = WorkOrderCreateForm(initial={
             "customer": customer.pk if customer else None,
             "device": device.pk if device else None,
+            "assigned_to": request.user.pk,
         })
         if customer:
             form.fields["device"].queryset = customer.devices.filter(is_active=True)

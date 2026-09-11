@@ -101,7 +101,7 @@
             <td>{{ order.device }}</td>
             <td>{% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}</td>
             <td style="font-weight:600;">{{ order.promised_delivery_at|date:"d/m/Y" }}</td>
-            <td>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"—" }}</td>
+            <td>{% if order.assigned_to %}{{ order.assigned_to.get_full_name|default:order.assigned_to.username }}{% else %}—{% endif %}</td>
             <td style="text-align:right;"><a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
           </tr>
           {% endfor %}
@@ -179,7 +179,7 @@
             <td>{{ order.device }}</td>
             <td>{% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}</td>
             <td>{% include "workorders/_priority_badge.html" with priority=order.priority label=order.get_priority_display %}</td>
-            <td>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"—" }}</td>
+            <td>{% if order.assigned_to %}{{ order.assigned_to.get_full_name|default:order.assigned_to.username }}{% else %}—{% endif %}</td>
             <td>{{ order.received_at|date:"d/m/Y" }}</td>
             <td style="text-align:right;"><a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
           </tr>
@@ -220,7 +220,7 @@
             <td>{{ order.device }}</td>
             <td>{% include "workorders/_status_badge.html" with status=order.status label=order.get_status_display %}</td>
             <td>{% include "workorders/_priority_badge.html" with priority=order.priority label=order.get_priority_display %}</td>
-            <td>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"—" }}</td>
+            <td>{% if order.assigned_to %}{{ order.assigned_to.get_full_name|default:order.assigned_to.username }}{% else %}—{% endif %}</td>
             <td>{{ order.received_at|date:"d/m/Y" }}</td>
             <td style="text-align:right;"><a href="{% url 'workorder-detail' order.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
           </tr>
